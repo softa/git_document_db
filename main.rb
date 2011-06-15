@@ -4,14 +4,14 @@ require 'json'
 require 'sinatra'
 include Grit
 
-def dir
-  "documents/:id.git"
+def doc_path id
+  "documents/#{id}.git"
 end
 
 get '/documents/:id' do |id|
-  dir = "documents/#{id}.git"
-  if File.directory?(dir)
-    repo = Repo.new(dir)
+  path = doc_path id
+  if File.directory?(path)
+    repo = Repo.new(path)
     repo.to_json
   else
     not_found
@@ -19,11 +19,11 @@ get '/documents/:id' do |id|
 end
 
 post '/documents' do
-  dir = "documents/#{repo}.git"
-  FileUtils.mkdir_p dir
-  repo = Repo.init_bare(dir)
+  path = doc_path id
+  FileUtils.mkdir_p path
+  repo = Repo.init_bare(path)
 end
 
 delete '/documents/:id' do |id|
-  FileUtils.rm_rf
+  FileUtils.rm_rf(doc_path id)
 end
