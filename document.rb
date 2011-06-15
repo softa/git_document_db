@@ -4,7 +4,7 @@ require 'json'
 
 class RepoNotFound < StandardError
 end
-  
+
 class Document
 
   include Grit
