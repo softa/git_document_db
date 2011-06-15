@@ -1,0 +1,9 @@
+get /documents/:id
+Get data from a document
+
+post /documents
+Create a new document:
+id:
+
+delete /documents/:id
+Remove document

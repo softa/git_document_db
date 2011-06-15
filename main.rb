@@ -4,8 +4,12 @@ require 'json'
 require 'sinatra'
 include Grit
 
-get '/:user/:repo/info' do |user, repo|
-  dir = "repos/#{user}/#{repo}.git"
+def dir
+  "documents/:id.git"
+end
+
+get '/documents/:id' do |id|
+  dir = "documents/#{id}.git"
   if File.directory?(dir)
     repo = Repo.new(dir)
     repo.to_json
@@ -14,8 +18,12 @@ get '/:user/:repo/info' do |user, repo|
   end
 end
 
-get '/:user/:repo/create' do |user, repo|
-  dir = "repos/#{user}/#{repo}.git"
+post '/documents' do
+  dir = "documents/#{repo}.git"
   FileUtils.mkdir_p dir
   repo = Repo.init_bare(dir)
+end
+
+delete '/documents/:id' do |id|
+  FileUtils.rm_rf
 end
