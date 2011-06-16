@@ -10,5 +10,6 @@ describe "Main" do
   it "should create a document" do
     post '/documents', {:id => 'foobar'}
     last_response.should be_ok
+    # TODO validate last_response.body
   end
 end

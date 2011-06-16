@@ -1,10 +1,11 @@
 require 'sinatra'
-require 'document'
+require File.dirname(__FILE__) + 'document'
 
 get '/documents/:id' do |id|
   document = Document.find id
-  return not_found unless document
   document.to_json
+rescue
+  not_found
 end
 
 post '/documents' do
