@@ -103,7 +103,7 @@ module GitDocument
         
         if new_record?
           FileUtils.mkdir_p path
-          repo = Grit::Repo.init_bare(path)
+          repo = Grit::Repo.init(path)
           # TODO save
         else
           # TODO try to make ActiveModel::Dirty work with dynamic attributes
