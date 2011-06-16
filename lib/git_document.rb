@@ -15,7 +15,7 @@ module GitDocument
   module Document
     
     attr_reader :errors
-    
+
     def self.included(base)
       base.class_eval do
          
@@ -43,25 +43,35 @@ module GitDocument
         @new_record = new_record
         @errors = ActiveModel::Errors.new(self)
         attribute :id
-        self.class_eval { define_attribute_methods args.keys.map(&:to_sym) }
+        # TODO try to make ActiveModel::Dirty work with dynamic attributes
+        #self.class.class_eval { define_attribute_methods args.keys.map(&:to_sym) }
         args.each do |key, value|
           if attribute(key) or key.to_sym == :id
             self.send("#{key}=".to_sym, value)
           end
         end
+        @previously_changed = changes
+        @changed_attributes.clear
       end
     end
     
+    def attributes
+      @attributes ||= {}
+    end
+
     def attribute(name, options = {})
-      return if self.singleton_methods.include?(name.to_s)
       return if self.class.method_defined?(name.to_sym) and name.to_sym != :id
       default = options[:default]
-      # TODO make #{name}_will_change! work
-      self.instance_eval <<-EOF
+      # TODO try to make ActiveModel::Dirty work with dynamic attributes
+      #self.class.class_eval <<-EOF
+      #  define_attribute_methods #{(self.attributes.keys + [name]).map(&:to_sym).inspect}
+      #EOF
+      self.class_eval <<-EOF
         def #{name}
           attributes['#{name}'] || #{default.inspect}
         end
         def #{name}=(value)
+          # TODO try to make ActiveModel::Dirty work with dynamic attributes
           ##{name}_will_change! unless attributes['#{name}'] == value
           attributes['#{name}'] = value
         end
@@ -69,10 +79,6 @@ module GitDocument
       return true
     end
           
-    def attributes
-      @attributes ||= {}
-    end
-
     def to_model
       self
     end
@@ -91,20 +97,35 @@ module GitDocument
       
     def save
       _run_save_callbacks do
+        # TODO implement validations and verify self.valid? before saving
+        # TODO add errors whenever a validation fail
+        return false unless id
+        
         if new_record?
           FileUtils.mkdir_p path
           repo = Grit::Repo.init_bare(path)
+          # TODO save
         else
+          # TODO try to make ActiveModel::Dirty work with dynamic attributes
+          # It it works, check if self.changed? before saving
           raise GitDocument::Errors::NotFound unless File.directory?(path)
           repo = Grit::Repo.new(path)
+          # TODO save
         end
-        # TODO save
+        
         @new_record = false
+        @previously_changed = changes
+        @changed_attributes.clear
+        true
       end
     end
 
     def save!
       save || raise(GitDocument::Errors::NotSaved)
+    end
+    
+    def reload
+      # TODO reload attributes
     end
 
     def destroy
@@ -127,8 +148,15 @@ module GitDocument
 
     module ClassMethods
 
+      def root_path
+        @@root_path
+      end
+      def root_path=(path)
+        @@root_path = path
+      end
+      
       def path(id)
-        "documents/#{id}.git"
+        "#{root_path}/#{id}.git"
       end
 
       def find(id)
@@ -140,12 +168,12 @@ module GitDocument
         document = self.new(attributes.merge(:id => id), false)
       end
 
-      def create(args)
+      def create(args = {})
         document = self.new args
         document.save
       end
 
-      def create!(args)
+      def create!(args = {})
         document = self.new args
         document.save!
       end
