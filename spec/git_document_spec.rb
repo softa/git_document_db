@@ -74,6 +74,12 @@ describe "GitDocument::Document" do
     document.attributes['bar'].should == "foo"
   end
   
+  it "should not create attributes that are pre-existing methods" do
+    document = Document.new :id => 'foo', :foo => 'bar'
+    document.attribute :send
+    document.attributes['send'].should == nil
+  end
+  
   it "should convert to model" do
     document = Document.new :id => 'foo', :foo => 'bar'
     document.to_model.should == document
