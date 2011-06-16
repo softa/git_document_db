@@ -1,4 +1,5 @@
-require File.dirname(__FILE__) + '/spec_helper'
+require File.join(File.dirname(__FILE__), 'spec_helper')
+require File.join(File.dirname(__FILE__), '..', 'main')
 
 describe "Main" do
   include Rack::Test::Methods
@@ -10,5 +11,6 @@ describe "Main" do
   it "should create a document" do
     post '/documents', {:id => 'foobar'}
     last_response.should be_ok
+    # TODO validate last_response.body
   end
 end
