@@ -1,5 +1,5 @@
 require 'sinatra'
-require 'document'
+require './document.rb'
 
 get '/documents/:id' do |id|
   document = Document.find id
