@@ -164,7 +164,6 @@ module GitDocument
     end
     
     def reload
-      # TODO remove all attributes (and their accessor methods) except id
       attributes.keys.each do |attribute|
         remove_attribute(attribute) unless attribute.to_sym == :id
       end
