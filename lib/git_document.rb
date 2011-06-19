@@ -10,9 +10,9 @@ module GitDocument
     end
     class NotSaved < StandardError
     end
-    class ExistingId < StandardError
-    end
     class InvalidAttributeName < StandardError
+    end
+    class InvalidAttribute < StandardError
     end
   end
   
@@ -44,12 +44,9 @@ module GitDocument
       _run_initialize_callbacks do
         @new_record = new_record
         @errors = ActiveModel::Errors.new(self)
-        @attributes = {}
-        attribute :id, :read_only => !@new_record
-        args.each do |key, value|
-          if attribute(key) or key.to_sym == :id
-            self.send("#{key}=".to_sym, value)
-          end
+        create_attribute :id, :read_only => !@new_record
+        args.each do |attribute, value|
+          create_attribute attribute, :value => value
         end
         @previously_changed = changes
         @changed_attributes.clear
@@ -60,18 +57,17 @@ module GitDocument
       @errors
     end
     
-    def attribute(name, options = {})
+    def create_attribute(name, options = {})
+      return false if attributes[name.to_s]
       raise GitDocument::Errors::InvalidAttributeName if self.class.method_defined?(name.to_sym) and name.to_sym != :id
       default = options[:default]
+      value = options[:value]
       self.class_eval <<-EOF
         def #{name}
           attributes['#{name}'] || #{default.inspect}
         end
         def #{name}_changed?
           attribute_changed?(:#{name})
-        end
-        def #{name}_change
-          attribute_change(:#{name})
         end
         def #{name}_change
           attribute_change(:#{name})
@@ -85,20 +81,35 @@ module GitDocument
         def reset_#{name}!
           reset_attribute!(:#{name})
         end
-        def #{name}=(value)
-          #{name}_will_change! unless attributes['#{name}'] == value
-          attributes['#{name}'] = value
-        end
       EOF
-      unless options[:read_only]
+      if options[:read_only]
+        @attributes[name.to_s] = (value || default)
+      else
         self.class_eval <<-EOF
           def #{name}=(value)
             #{name}_will_change! unless attributes['#{name}'] == value
             attributes['#{name}'] = value
           end
         EOF
+        self.send("#{name}=".to_sym, (value || default))
       end
       return true
+    end
+    
+    def remove_attribute(name)
+      raise GitDocument::Errors::InvalidAttribute unless attributes.keys.include?(name.to_s)
+      raise GitDocument::Errors::InvalidAttribute if name.to_s == 'id'
+      @attributes[name.to_s] = nil
+      read_only_undef = "undef #{name}=" if self.singleton_methods.include? "#{name}="
+      self.instance_eval <<-EOF
+        undef #{name}
+        undef #{name}_changed?
+        undef #{name}_change
+        undef #{name}_was
+        undef #{name}_will_change!
+        undef reset_#{name}!
+        #{ read_only_undef }
+      EOF
     end
           
     def to_model
@@ -137,7 +148,7 @@ module GitDocument
         end
         
         if self.singleton_methods.include? 'id='
-          self.class_eval { undef id= }
+          self.instance_eval { undef id= }
         end
         
         @new_record = false
@@ -153,7 +164,16 @@ module GitDocument
     end
     
     def reload
-      # TODO reload attributes
+      # TODO remove all attributes (and their accessor methods) except id
+      attributes.keys.each do |attribute|
+        remove_attribute(attribute) unless attribute.to_sym == :id
+      end
+      args = self.class.load(self.id)
+      args.each do |attribute, value|
+        if create_attribute(attribute)
+          self.send("#{key}=".to_sym, value)
+        end
+      end
     end
 
     def destroy
@@ -193,14 +213,19 @@ module GitDocument
       def path(id)
         "#{root_path}/#{id}.git"
       end
-
-      def find(id)
+      
+      def load(id)
         path = self.path id
         raise GitDocument::Errors::NotFound unless File.directory?(path)
         repo = Grit::Repo.new(path)
-        # TODO load attributes from files
         attributes = {}
-        document = self.new(attributes.merge(:id => id), false)
+        # TODO load attributes from files
+        attributes
+      end
+
+      def find(id)
+        attributes = self.load(id).merge(:id => id)
+        document = self.new(attributes, false)
       end
 
       def create(args = {})
