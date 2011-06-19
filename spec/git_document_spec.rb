@@ -1,11 +1,6 @@
 require File.join(File.dirname(__FILE__), 'spec_helper')
 require File.join(File.dirname(__FILE__), '..', 'lib', 'git_document')
 
-class Document
-  include GitDocument::Document
-end
-Document.root_path = File.join(File.dirname(__FILE__), '..', 'documents', 'test')
-
 describe "GitDocument::Document" do
 
   before(:all) do
@@ -149,8 +144,7 @@ describe "GitDocument::Document" do
   it "should not save without an id" do
     document = Document.new
     document.save.should == false
-    # TODO find out why the hell this is making duplicate validation callbacks
-    # document.errors[:id].should == ["can't be blank", "must be a valid file name"]
+    document.errors[:id].should == ["can't be blank", "must be a valid file name"]
   end
 
   it "should not save with an invalid id" do
@@ -158,8 +152,7 @@ describe "GitDocument::Document" do
     %w(/ ? * : ; { } \\).each do |char|
       document.id = "foo#{char}"
       document.save.should == false
-      # TODO find out why the hell this is making duplicate validation callbacks
-      #document.errors[:id].should == ["must be a valid file name"]
+      document.errors[:id].should == ["must be a valid file name"]
     end
   end
 

@@ -31,7 +31,7 @@ module GitDocument
 
         define_model_callbacks :initialize, :only => :after
         define_model_callbacks :save, :destroy
-        
+
         validates_presence_of :id
         validates_format_of :id, :with => /^[^\/?*:;{}\\]+$/, :message => "must be a valid file name"
         
