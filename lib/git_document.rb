@@ -10,12 +10,14 @@ module GitDocument
     end
     class NotSaved < StandardError
     end
+    class ExistingId < StandardError
+    end
+    class InvalidAttributeName < StandardError
+    end
   end
   
   module Document
     
-    attr_reader :errors
-
     def self.included(base)
       base.class_eval do
          
@@ -30,8 +32,8 @@ module GitDocument
         define_model_callbacks :initialize, :only => :after
         define_model_callbacks :save, :destroy
         
-        # TODO Add validation to verify if id is a valid filename
-        # TODO Validate uniqueness of id
+        validates_presence_of :id
+        validates_format_of :id, :with => /^[^\/?*:;{}\\]+$/, :message => "must be a valid file name"
         
       end
 
@@ -42,7 +44,8 @@ module GitDocument
       _run_initialize_callbacks do
         @new_record = new_record
         @errors = ActiveModel::Errors.new(self)
-        attribute :id
+        @attributes = {}
+        attribute :id, :read_only => !@new_record
         args.each do |key, value|
           if attribute(key) or key.to_sym == :id
             self.send("#{key}=".to_sym, value)
@@ -53,12 +56,12 @@ module GitDocument
       end
     end
     
-    def attributes
-      @attributes ||= {}
+    def errors
+      @errors
     end
-
+    
     def attribute(name, options = {})
-      return if self.class.method_defined?(name.to_sym) and name.to_sym != :id
+      raise GitDocument::Errors::InvalidAttributeName if self.class.method_defined?(name.to_sym) and name.to_sym != :id
       default = options[:default]
       self.class_eval <<-EOF
         def #{name}
@@ -87,6 +90,14 @@ module GitDocument
           attributes['#{name}'] = value
         end
       EOF
+      unless options[:read_only]
+        self.class_eval <<-EOF
+          def #{name}=(value)
+            #{name}_will_change! unless attributes['#{name}'] == value
+            attributes['#{name}'] = value
+          end
+        EOF
+      end
       return true
     end
           
@@ -108,11 +119,14 @@ module GitDocument
       
     def save
       _run_save_callbacks do
-        # TODO implement validations and verify self.valid? before saving
-        # TODO add errors whenever a validation fail
-        return false unless id
+
+        return false unless self.valid?
         
         if new_record?
+          if File.directory?(path)
+            errors.add :id, "already exists"
+            return false
+          end
           FileUtils.mkdir_p path
           repo = Grit::Repo.init(path)
           # TODO save
@@ -122,10 +136,15 @@ module GitDocument
           # TODO save
         end
         
+        if self.singleton_methods.include? 'id='
+          self.class_eval { undef id= }
+        end
+        
         @new_record = false
         @previously_changed = changes
         @changed_attributes.clear
         true
+        
       end
     end
 
@@ -153,6 +172,12 @@ module GitDocument
         
     def to_json
       attributes.to_json
+    end
+    
+    private
+    
+    def attributes
+      @attributes ||= {}
     end
 
     module ClassMethods
