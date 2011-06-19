@@ -114,7 +114,7 @@ module GitDocument
         
         if new_record?
           FileUtils.mkdir_p path
-          repo = Grit::Repo.init_bare(path)
+          repo = Grit::Repo.init(path)
           # TODO save
         elsif self.changed?
           raise GitDocument::Errors::NotFound unless File.directory?(path)
