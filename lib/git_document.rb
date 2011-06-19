@@ -43,8 +43,6 @@ module GitDocument
         @new_record = new_record
         @errors = ActiveModel::Errors.new(self)
         attribute :id
-        # TODO try to make ActiveModel::Dirty work with dynamic attributes
-        #self.class.class_eval { define_attribute_methods args.keys.map(&:to_sym) }
         args.each do |key, value|
           if attribute(key) or key.to_sym == :id
             self.send("#{key}=".to_sym, value)
@@ -62,17 +60,30 @@ module GitDocument
     def attribute(name, options = {})
       return if self.class.method_defined?(name.to_sym) and name.to_sym != :id
       default = options[:default]
-      # TODO try to make ActiveModel::Dirty work with dynamic attributes
-      #self.class.class_eval <<-EOF
-      #  define_attribute_methods #{(self.attributes.keys + [name]).map(&:to_sym).inspect}
-      #EOF
       self.class_eval <<-EOF
         def #{name}
           attributes['#{name}'] || #{default.inspect}
         end
+        def #{name}_changed?
+          attribute_changed?(:#{name})
+        end
+        def #{name}_change
+          attribute_change(:#{name})
+        end
+        def #{name}_change
+          attribute_change(:#{name})
+        end
+        def #{name}_was
+          attribute_was(:#{name})
+        end
+        def #{name}_will_change!
+          attribute_will_change!(:#{name})
+        end
+        def reset_#{name}!
+          reset_attribute!(:#{name})
+        end
         def #{name}=(value)
-          # TODO try to make ActiveModel::Dirty work with dynamic attributes
-          ##{name}_will_change! unless attributes['#{name}'] == value
+          #{name}_will_change! unless attributes['#{name}'] == value
           attributes['#{name}'] = value
         end
       EOF
@@ -105,9 +116,7 @@ module GitDocument
           FileUtils.mkdir_p path
           repo = Grit::Repo.init_bare(path)
           # TODO save
-        else
-          # TODO try to make ActiveModel::Dirty work with dynamic attributes
-          # It it works, check if self.changed? before saving
+        elsif self.changed?
           raise GitDocument::Errors::NotFound unless File.directory?(path)
           repo = Grit::Repo.new(path)
           # TODO save
@@ -151,6 +160,7 @@ module GitDocument
       def root_path
         @@root_path
       end
+      
       def root_path=(path)
         @@root_path = path
       end

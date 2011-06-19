@@ -49,8 +49,7 @@ describe "GitDocument::Document" do
   end
   
   # TODO try to make ActiveModel::Dirty work with dynamic attributes
-  it "should track changes to the attributes"# do
-=begin
+  it "should track changes to the attributes" do
     document = Document.new :id => 'foo', :foo => 'bar'
     document.changed?.should == false
     document.foo = "foo bar"
@@ -63,8 +62,20 @@ describe "GitDocument::Document" do
     document.changes.should == { 'foo' => ['bar', 'foo bar'], 'id' => ['foo', 'bar'] }
     document.save
     document.changed?.should == false
-=end
+  end
   
+  it "should track changes to dynamicly created attributes as well" do
+    document = Document.new :id => 'foo'
+    document.changed?.should == false
+    document.attribute :foo
+    document.foo = "foo bar"
+    document.changed?.should == true
+    document.foo_changed?.should == true
+    document.changes.should == { 'foo' => [nil, 'foo bar'] }
+    document.save
+    document.changed?.should == false
+  end
+
   it "should have a read only id unless it is a new record"
 
   it "should create new attributes dinamically" do
@@ -159,7 +170,7 @@ describe "GitDocument::Document" do
     document.id.should == 'foo'
     document.foo.should == 'bar'
   end
-  
+
   it "should create a document"
   
   it "should raise an error when using create! and not creating" do
