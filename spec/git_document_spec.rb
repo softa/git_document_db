@@ -171,7 +171,13 @@ describe "GitDocument::Document" do
   end
   
   it "should reload the attributes"
-  it "should destroy a document"
+  
+  it "should destroy a document" do
+    Document.create :id => 'foo'
+    document = Document.find 'foo'
+    document.destroy
+    lambda { Document.find 'foo' }.should raise_error(GitDocument::Errors::NotFound)
+  end
   
   it "should return the path to the repository" do
     document = Document.new :id => 'foo'
@@ -187,17 +193,20 @@ describe "GitDocument::Document" do
     Document.root_path = "abc"
     Document.path("foo").should == "abc/foo.git"
   end
-  
+
   it "should find a document and retrieve its attributes"# do
 =begin
-    document = Document.new :id => 'foo', :foo => 'bar'
-    document.save.should == true
+    Document.create :id => 'foo', :foo => 'bar'
     document = Document.find 'foo'
     document.id.should == 'foo'
     document.foo.should == 'bar'
   end
 =end
 
+  it "should not find and inexistent document" do
+    lambda { Document.find 'foo' }.should raise_error(GitDocument::Errors::NotFound)
+  end
+  
   it "should create a document"
   
   it "should raise an error when using create! and not creating" do
