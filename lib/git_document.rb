@@ -44,7 +44,7 @@ module GitDocument
       _run_initialize_callbacks do
         @new_record = new_record
         @errors = ActiveModel::Errors.new(self)
-        create_attribute :id, :read_only => !@new_record
+        create_attribute :id, :read_only => !@new_record, :value => (args[:id] || args['id'])
         args.each do |attribute, value|
           create_attribute attribute, :value => value
         end
@@ -58,7 +58,7 @@ module GitDocument
     end
     
     def create_attribute(name, options = {})
-      return false if attributes[name.to_s]
+      return false if attributes.keys.include?(name.to_s)
       raise GitDocument::Errors::InvalidAttributeName if self.class.method_defined?(name.to_sym) and name.to_sym != :id
       default = options[:default]
       value = options[:value]
@@ -169,9 +169,7 @@ module GitDocument
       end
       args = self.class.load(self.id)
       args.each do |attribute, value|
-        if create_attribute(attribute)
-          self.send("#{key}=".to_sym, value)
-        end
+        create_attribute attribute, :value => value
       end
     end
 

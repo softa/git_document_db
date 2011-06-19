@@ -240,7 +240,14 @@ describe "GitDocument::Document" do
     lambda { Document.find 'foo' }.should raise_error(GitDocument::Errors::NotFound)
   end
   
-  it "should create a document"
+  it "should create a document"# do
+=begin
+    document = Document.create :id => 'foo', :foo => 'bar'
+    document.reload
+    document.id.should == 'foo'
+    document.foo.should == 'bar'
+  end
+=end
   
   it "should raise an error when using create! and not creating" do
     lambda {Document.create!}.should raise_error(GitDocument::Errors::NotSaved)
