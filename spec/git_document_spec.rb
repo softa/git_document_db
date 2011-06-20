@@ -192,14 +192,29 @@ describe "GitDocument::Document" do
     document.errors[:id].should == ["already exists"]
   end
   
-  it "should save an existing record"
+  it "should save an existing record" do
+    Document.create :id => 'foo', :foo => 'bar'
+    document = Document.find 'foo'
+    document.foo = 'foobar'
+    document.save.should == true
+    document.reload
+    document.foo.should == 'foobar'
+  end
   
   it "should raise an error when using save! and not saving" do
     document = Document.new
     lambda {document.save!}.should raise_error(GitDocument::Errors::NotSaved)
   end
   
-  it "should reload the attributes"
+  it "should reload the attributes" do
+    document1 = Document.create :id => 'foo', :foo => 'bar'
+    document2 = Document.find 'foo'
+    document2.foo.should == 'bar'
+    document1.foo = 'foobar'
+    document1.save
+    document2.reload
+    document2.foo.should == 'foobar'
+  end
   
   it "should destroy a document" do
     Document.create :id => 'foo'
