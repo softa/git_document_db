@@ -200,7 +200,7 @@ module GitDocument
     module ClassMethods
 
       def root_path
-        @@root_path
+        @@root_path if defined?(@@root_path)
       end
       
       def root_path=(path)
