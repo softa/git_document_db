@@ -222,17 +222,19 @@ module GitDocument
 
       def find(id)
         attributes = self.load(id).merge(:id => id)
-        document = self.new(attributes, false)
+        self.new(attributes, false)
       end
 
       def create(args = {})
         document = self.new args
         document.save
+        document
       end
 
       def create!(args = {})
         document = self.new args
         document.save!
+        document
       end
 
     end
