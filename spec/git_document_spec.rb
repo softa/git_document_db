@@ -3,8 +3,6 @@ require File.join(File.dirname(__FILE__), '..', 'lib', 'git_document')
 
 describe "GitDocument::Document" do
 
-  before(:all) do
-  end
   before(:each) do
     FileUtils.rm_rf(Document.root_path)
   end
@@ -164,15 +162,13 @@ describe "GitDocument::Document" do
     document.new_record?.should == false
   end
   
-  it "should save a new record"# do
-=begin
+  it "should save a new record" do
     document = Document.new :id => 'foo', :foo => 'bar'
     document.save.should == true
     document.reload
     document.id.should == 'foo'
     document.foo.should == 'bar'
   end
-=end
   
   it "should not save without an id" do
     document = Document.new
@@ -227,27 +223,23 @@ describe "GitDocument::Document" do
     Document.path("foo").should == "abc/foo.git"
   end
 
-  it "should find a document and retrieve its attributes"# do
-=begin
+  it "should find a document and retrieve its attributes" do
     Document.create :id => 'foo', :foo => 'bar'
     document = Document.find 'foo'
     document.id.should == 'foo'
     document.foo.should == 'bar'
   end
-=end
 
   it "should not find and inexistent document" do
     lambda { Document.find 'foo' }.should raise_error(GitDocument::Errors::NotFound)
   end
   
-  it "should create a document"# do
-=begin
+  it "should create a document" do
     document = Document.create :id => 'foo', :foo => 'bar'
     document.reload
     document.id.should == 'foo'
     document.foo.should == 'bar'
   end
-=end
   
   it "should raise an error when using create! and not creating" do
     lambda {Document.create!}.should raise_error(GitDocument::Errors::NotSaved)

@@ -58,7 +58,7 @@ module GitDocument
     end
     
     def create_attribute(name, options = {})
-      return false if attributes.keys.include?(name.to_s)
+      return false if attributes.has_key?(name.to_s)
       raise GitDocument::Errors::InvalidAttributeName if self.class.method_defined?(name.to_sym) and name.to_sym != :id
       default = options[:default]
       value = options[:value]
@@ -97,9 +97,9 @@ module GitDocument
     end
     
     def remove_attribute(name)
-      raise GitDocument::Errors::InvalidAttribute unless attributes.keys.include?(name.to_s)
+      raise GitDocument::Errors::InvalidAttribute unless attributes.has_key?(name.to_s)
       raise GitDocument::Errors::InvalidAttribute if name.to_s == 'id'
-      @attributes[name.to_s] = nil
+      @attributes.delete(name.to_s)
       read_only_undef = "undef #{name}=" if self.singleton_methods.include? "#{name}="
       self.instance_eval <<-EOF
         undef #{name}
@@ -140,11 +140,21 @@ module GitDocument
           end
           FileUtils.mkdir_p path
           repo = Grit::Repo.init(path)
-          # TODO save
+          commit_message = "Creating document ##{self.id}"
         elsif self.changed?
           raise GitDocument::Errors::NotFound unless File.directory?(path)
           repo = Grit::Repo.new(path)
-          # TODO save
+          commit_message = "Updating document ##{self.id}"
+        end
+        
+        if new_record? or self.changed?
+          index = repo.index
+          attributes.each do |name, value|
+            index.add(name, value)
+          end
+          parents = repo.commit_count > 0 ? [repo.log.first.id] : nil
+          my_commit = index.commit(commit_message, parents)
+          repo.commit(my_commit)
         end
         
         if self.singleton_methods.include? 'id='
@@ -165,10 +175,12 @@ module GitDocument
     
     def reload
       attributes.keys.each do |attribute|
+        puts "REMOVING :#{attribute}" unless attribute.to_sym == :id
         remove_attribute(attribute) unless attribute.to_sym == :id
       end
       args = self.class.load(self.id)
       args.each do |attribute, value|
+        puts "CREATING :#{attribute} => #{value.inspect}"
         create_attribute attribute, :value => value
       end
     end
@@ -216,7 +228,10 @@ module GitDocument
         raise GitDocument::Errors::NotFound unless File.directory?(path)
         repo = Grit::Repo.new(path)
         attributes = {}
-        # TODO load attributes from files
+        commit = repo.log.first
+        repo.log.first.tree.contents.each do |blob|
+          attributes[blob.name.to_sym] = blob.data
+        end
         attributes
       end
 
