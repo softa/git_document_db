@@ -175,12 +175,10 @@ module GitDocument
     
     def reload
       attributes.keys.each do |attribute|
-        puts "REMOVING :#{attribute}" unless attribute.to_sym == :id
         remove_attribute(attribute) unless attribute.to_sym == :id
       end
       args = self.class.load(self.id)
       args.each do |attribute, value|
-        puts "CREATING :#{attribute} => #{value.inspect}"
         create_attribute attribute, :value => value
       end
     end
