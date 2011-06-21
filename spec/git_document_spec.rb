@@ -283,13 +283,17 @@ describe "GitDocument::Document" do
   end
   
   it "should have a root path" do
+    old_path = Document.root_path
     Document.root_path = "abc"
     Document.root_path.should == "abc"
+    Document.root_path = old_path
   end
   
   it "should return the path for an id" do
+    old_path = Document.root_path
     Document.root_path = "abc"
     Document.path("foo").should == "abc/documents/foo.git"
+    Document.root_path = old_path
   end
 
   it "should find a document and retrieve its attributes" do
