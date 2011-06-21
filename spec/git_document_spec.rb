@@ -313,5 +313,40 @@ describe "GitDocument::Document" do
   it "should raise an error when using create! and not creating" do
     lambda {Document.create!}.should raise_error(GitDocument::Errors::NotSaved)
   end
+
+  it "should have a history with all the document's versions, in descendent order" do
+    document = Document.create :id => 'foo', :foo => 'bar'
+    document.history.size.should == 1
+    document.foo = 'foobar'
+    document.save
+    document.history.size.should == 2
+    document.create_attribute :bar
+    document.bar = 'foo'
+    document.save
+    document.history.size.should == 3
+    document1 = document.version(document.history[2])
+    document1.id.should == 'foo'
+    document1.foo.should == 'bar'
+    document2 = document.version(document.history[1])
+    document2.id.should == 'foo'
+    document2.foo.should == 'foobar'
+    document3 = document.version(document.history[0])
+    document3.id.should == 'foo'
+    document3.foo.should == 'foobar'
+    document3.bar.should == 'foo'
+  end
   
+  it "should not have a history if the record is new" do
+    document = Document.new :id => 'foo', :foo => 'bar'
+    document.history.nil?.should == true
+  end
+  
+  it "should not write to history if the document hasn't changed" do
+    document = Document.create :id => 'foo', :foo => 'bar'
+    document.history.size.should == 1
+    document.foo = 'bar'
+    document.save
+    document.history.size.should == 1
+  end
+
 end

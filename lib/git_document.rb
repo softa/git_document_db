@@ -210,6 +210,17 @@ module GitDocument
       attributes.to_json
     end
     
+    def history
+      return nil if new_record?
+      raise GitDocument::Errors::NotFound unless File.directory?(path)
+      repo = Grit::Repo.new(path)
+      repo.log.map &:id
+    end
+    
+    def version(commit_id)
+      self.class.find(self.id, commit_id)
+    end
+    
     private
     
     def attributes
@@ -243,33 +254,27 @@ module GitDocument
         "#{root_path}/#{id}.git"
       end
       
-      def load(id)
+      def load(id, commit_id = nil)
         # Workaround to fix JSON.parse incapacity of parsing root objects that are not Array or Hashes
         def jparse(str)
           return JSON.parse(str) if str =~ /\A\s*[{\[]/
           JSON.parse("[#{str}]")[0]
         end
-        def load_tree(tree, attributes)
-          tree.contents.each do |git_object|
-            if git_object.is_a? Grit::Tree
-              attributes[git_object.name.to_sym] = {}
-              load_tree(git_object, attributes[git_object.name.to_sym])
-            else
-              attributes[git_object.name.to_sym] = jparse(git_object.data)
-            end
-          end
-        end
         path = self.path id
         raise GitDocument::Errors::NotFound unless File.directory?(path)
         repo = Grit::Repo.new(path)
         attributes = {}
-        commit = repo.log.first
-        load_tree(repo.log.first.tree, attributes)
+        if commit_id
+          commit = repo.commit(commit_id)
+        else
+          commit = repo.log.first
+        end
+        load_tree(commit.tree, attributes)
         attributes
       end
 
-      def find(id)
-        attributes = self.load(id).merge(:id => id)
+      def find(id, commit_id = nil)
+        attributes = self.load(id, commit_id).merge(:id => id)
         self.new(attributes, false)
       end
 
@@ -285,6 +290,19 @@ module GitDocument
         document
       end
       
+      private
+      
+      def load_tree(tree, attributes)
+        tree.contents.each do |git_object|
+          if git_object.is_a? Grit::Tree
+            attributes[git_object.name.to_sym] = {}
+            load_tree(git_object, attributes[git_object.name.to_sym])
+          else
+            attributes[git_object.name.to_sym] = jparse(git_object.data)
+          end
+        end
+      end
+
     end
 
   end
