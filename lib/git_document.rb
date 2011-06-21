@@ -59,12 +59,21 @@ module GitDocument
     
     def create_attribute(name, options = {})
       return false if attributes.has_key?(name.to_s)
-      raise GitDocument::Errors::InvalidAttributeName if self.class.method_defined?(name.to_sym) and name.to_sym != :id
+      raise GitDocument::Errors::InvalidAttributeName if self.respond_to?(name.to_s) and name.to_sym != :id
       default = options[:default]
       value = options[:value]
+      unless value.nil?
+        apply_value = value
+      else
+        apply_value = default
+      end
       self.class_eval <<-EOF
         def #{name}
-          attributes['#{name}'] || #{default.inspect}
+          unless attributes['#{name}'].nil?
+            attributes['#{name}']
+          else
+            #{default.inspect}
+          end
         end
         def #{name}_changed?
           attribute_changed?(:#{name})
@@ -83,15 +92,15 @@ module GitDocument
         end
       EOF
       if options[:read_only]
-        @attributes[name.to_s] = (value || default)
+        @attributes[name.to_s] = apply_value
       else
         self.class_eval <<-EOF
           def #{name}=(value)
             #{name}_will_change! unless attributes['#{name}'] == value
-            attributes['#{name}'] = value
+            @attributes['#{name}'] = value
           end
         EOF
-        self.send("#{name}=".to_sym, (value || default))
+        self.send("#{name}=".to_sym, apply_value)
       end
       return true
     end
@@ -100,7 +109,7 @@ module GitDocument
       raise GitDocument::Errors::InvalidAttribute unless attributes.has_key?(name.to_s)
       raise GitDocument::Errors::InvalidAttribute if name.to_s == 'id'
       @attributes.delete(name.to_s)
-      read_only_undef = "undef #{name}=" if self.singleton_methods.include? "#{name}="
+      undef_id = "undef #{name}=" if self.respond_to? "#{name}="
       self.instance_eval <<-EOF
         undef #{name}
         undef #{name}_changed?
@@ -108,7 +117,7 @@ module GitDocument
         undef #{name}_was
         undef #{name}_will_change!
         undef reset_#{name}!
-        #{ read_only_undef }
+        #{ undef_id }
       EOF
     end
           
@@ -150,14 +159,14 @@ module GitDocument
         if new_record? or self.changed?
           index = repo.index
           attributes.each do |name, value|
-            index.add(name, value)
+            add_attribute_to_index index, name, value
           end
           parents = repo.commit_count > 0 ? [repo.log.first.id] : nil
           my_commit = index.commit(commit_message, parents)
           repo.commit(my_commit)
         end
         
-        if self.singleton_methods.include? 'id='
+        if self.respond_to? 'id='
           self.instance_eval { undef id= }
         end
         
@@ -207,6 +216,19 @@ module GitDocument
       @attributes ||= {}
     end
 
+    def add_attribute_to_index(index, name, value, parent = nil)
+      if value.is_a? Hash
+        new_parent = name
+        new_parent = "#{parent}/#{new_parent}" unless parent.nil?
+        value.each do |new_name, new_value|
+          add_attribute_to_index index, new_name, new_value, new_parent
+        end
+      else
+        name = "#{parent}/#{name}" unless parent.nil?
+        index.add(name, value.to_json)
+      end
+    end
+    
     module ClassMethods
 
       def root_path
@@ -222,14 +244,27 @@ module GitDocument
       end
       
       def load(id)
+        # Workaround to fix JSON.parse incapacity of parsing root objects that are not Array or Hashes
+        def jparse(str)
+          return JSON.parse(str) if str =~ /\A\s*[{\[]/
+          JSON.parse("[#{str}]")[0]
+        end
+        def load_tree(tree, attributes)
+          tree.contents.each do |git_object|
+            if git_object.is_a? Grit::Tree
+              attributes[git_object.name.to_sym] = {}
+              load_tree(git_object, attributes[git_object.name.to_sym])
+            else
+              attributes[git_object.name.to_sym] = jparse(git_object.data)
+            end
+          end
+        end
         path = self.path id
         raise GitDocument::Errors::NotFound unless File.directory?(path)
         repo = Grit::Repo.new(path)
         attributes = {}
         commit = repo.log.first
-        repo.log.first.tree.contents.each do |blob|
-          attributes[blob.name.to_sym] = blob.data
-        end
+        load_tree(repo.log.first.tree, attributes)
         attributes
       end
 
@@ -249,7 +284,7 @@ module GitDocument
         document.save!
         document
       end
-
+      
     end
 
   end

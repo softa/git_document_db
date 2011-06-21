@@ -201,6 +201,60 @@ describe "GitDocument::Document" do
     document.foo.should == 'foobar'
   end
   
+  it "should save and retrieve string values" do
+    Document.create :id => 'foo', :foo => 'bar'
+    document = Document.find 'foo'
+    document.foo.should === 'bar'
+  end
+  
+  it "should save and retrieve numeric values" do
+    Document.create :id => 'foo', :foo => 123, :bar => 456.78
+    document = Document.find 'foo'
+    document.foo.should === 123
+    document.bar.should === 456.78
+  end
+  
+  it "should save and retrieve boolean fields" do
+    Document.create :id => 'foo', :foo => true, :bar => false
+    document = Document.find 'foo'
+    document.foo.should === true
+    document.bar.should === false
+  end
+  
+  it "should save and retrieve null values" do
+    Document.create :id => 'foo', :foo => nil
+    document = Document.find 'foo'
+    document.foo.should === nil
+  end
+  
+  it "should save and retrieve array values" do
+    Document.create :id => 'foo', :foo => ["1", 2, 3.4, false, nil, ["abc", 123]]
+    document = Document.find 'foo'
+    document.foo.should === ["1", 2, 3.4, false, nil, ["abc", 123]]
+  end
+  
+  it "should save nested hashes of attributes" do
+    Document.create({
+      :id => 'foo',
+      :foo => {
+        :bar => 45.99,
+        :foo => true,
+        :array => ["1", "2", "3"]
+      },
+      :bar => {
+        :foo_bar => 'bar_foo',
+        :abc => {
+          :foo => 123,
+          :bar => 456,
+          :array_of_hashes => [{ "foo" => "bar" }, { "foo" => "foobar" }]
+        }
+      }
+    })
+    document = Document.find 'foo'
+    document.foo.should == { :bar => 45.99, :foo => true, :array => ["1", "2", "3"] }
+    document.bar.should == { :foo_bar => 'bar_foo', :abc => { :foo => 123, :bar => 456, :array_of_hashes => [{ "foo" => "bar" }, { "foo" => "foobar" }] } }
+  end
+  
   it "should raise an error when using save! and not saving" do
     document = Document.new
     lambda {document.save!}.should raise_error(GitDocument::Errors::NotSaved)
