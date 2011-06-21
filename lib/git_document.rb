@@ -61,7 +61,8 @@ module GitDocument
     
     def create_attribute(name, options = {})
       return false if attributes.has_key?(name.to_s)
-      raise GitDocument::Errors::InvalidAttributeName if self.respond_to?(name.to_s) and name.to_sym != :id and name.to_sym == :attribute
+      raise GitDocument::Errors::InvalidAttributeName if self.respond_to?(name.to_s) and name.to_sym != :id
+      raise GitDocument::Errors::InvalidAttributeName if name.to_sym == :attribute
       default = options[:default]
       value = options[:value]
       unless value.nil?

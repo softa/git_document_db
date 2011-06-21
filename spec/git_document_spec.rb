@@ -102,6 +102,7 @@ describe "GitDocument::Document" do
   it "should not create attributes that are pre-existing methods and raise an error" do
     document = Document.new :id => 'foo', :foo => 'bar'
     lambda{ document.create_attribute :send }.should raise_error(GitDocument::Errors::InvalidAttributeName)
+    lambda{ document.create_attribute :attribute }.should raise_error(GitDocument::Errors::InvalidAttributeName)
   end
   
   it "should remove a dymamic attribute" do
