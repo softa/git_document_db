@@ -426,11 +426,10 @@ module GitDocument
       end
       
       def no_conflicts?(repo)
-        conflicts = false
         repo.status.files.map{ |file| file[1] }.each do |file|
-          conflicts = true if file.type == "M"
+          return false if file.type == "M"
         end
-        !conflicts
+        true
       end
       
       private
