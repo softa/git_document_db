@@ -3,6 +3,10 @@ require 'sinatra'
 require File.join(File.dirname(__FILE__), 'document')
 Document.root_path = File.join(File.dirname(__FILE__), 'db', Sinatra::Application.environment.to_s)
 
+before do
+  content_type 'application/json'
+end
+
 get '/documents/:id' do |id|
   begin
     document = Document.find id

@@ -10,6 +10,18 @@ describe "Main" do
   it "should create a document" do
     post '/documents', {:id => 'foobar'}
     last_response.should be_ok
-    # TODO validate last_response.body
+    last_response.headers["Content-Type"].should == "application/json"
+    last_response.body.should == '{"id":"foobar"}'
   end
+  
+  it "should not create a document without a id"# do
+  #   post '/documents'
+  #   last_response.status.should == '404'
+  # end
+
+  it "should create a document with attributes"
+
+  it "should delete a document"
+  
+  it "should update a document"
 end
