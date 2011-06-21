@@ -14,18 +14,18 @@ describe "Main" do
     last_response.body.should == '{"id":"foobar"}'
   end
   
-  it "should not create a document without a id" do
+  it "should not create a document without an id" do
     post '/documents'
     last_response.status.should == 406
   end
 
-  it "should create a document with attributes"# do
-  #   data = {:id => "foo", :foo => "bar", :attribute => "content"}
-  #   post '/documents', data
-  #   last_response.status.should == 200
-  #   last_response.headers["Content-Type"].should == "application/json"
-  #   last_response.body.should == data.to_json
-  # end
+  it "should create a document with attributes" # do
+   #    data = {:id => "foo", :foo => "bar", :attribute => "content"}
+   #    post '/documents', data
+   #    last_response.status.should == 200
+   #    last_response.headers["Content-Type"].should == "application/json"
+   #    last_response.body.should == data.to_json
+   #  end
 
   it "should delete a document" do
     post '/documents', {:id => 'foobar'}
@@ -40,4 +40,6 @@ describe "Main" do
   end
   
   it "should update a document"
+
+  it "should get the document edit history"
 end
