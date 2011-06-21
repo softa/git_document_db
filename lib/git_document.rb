@@ -262,7 +262,7 @@ module GitDocument
       end
       
       def path(id)
-        "#{root_path}/#{id}.git"
+        "#{root_path}/documents/#{id}.git"
       end
       
       def load(id, commit_id = nil)

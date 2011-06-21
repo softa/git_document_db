@@ -279,7 +279,7 @@ describe "GitDocument::Document" do
   
   it "should return the path to the repository" do
     document = Document.new :id => 'foo'
-    document.path.should == "#{Document.root_path}/foo.git"
+    document.path.should == "#{Document.root_path}/documents/foo.git"
   end
   
   it "should have a root path" do
@@ -289,7 +289,7 @@ describe "GitDocument::Document" do
   
   it "should return the path for an id" do
     Document.root_path = "abc"
-    Document.path("foo").should == "abc/foo.git"
+    Document.path("foo").should == "abc/documents/foo.git"
   end
 
   it "should find a document and retrieve its attributes" do
