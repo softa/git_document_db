@@ -15,8 +15,8 @@ describe "GitDocument::Document" do
 
   it "should not access the attributes hash directly" do
     document = Document.new :id => 'foo', :foo => 'bar'
-    lambda { document.attributes['id'] }.should raise_error(NoMethodError)
-    lambda { document.attributes['bar'] }.should raise_error(NoMethodError)
+    lambda{ document.attributes['id'] }.should raise_error(NoMethodError)
+    lambda{ document.attributes['bar'] }.should raise_error(NoMethodError)
   end
 
   it "should have included GitDocument::Document" do
@@ -82,8 +82,8 @@ describe "GitDocument::Document" do
     document.save
     document.new_record?.should == false
     document.id.should == 'bar'
-    lambda { document.id = 'foo' }.should raise_error(NoMethodError)
-    lambda { document.attributes['id'] = 'foo' }.should raise_error(NoMethodError)
+    lambda{ document.id = 'foo' }.should raise_error(NoMethodError)
+    lambda{ document.attributes['id'] = 'foo' }.should raise_error(NoMethodError)
   end
 
   it "should create new attributes dynamically" do
@@ -95,29 +95,29 @@ describe "GitDocument::Document" do
   it "should create read only attributes dynamically" do
     document = Document.new :id => 'foo', :foo => 'bar'
     document.create_attribute :bar, :read_only => true
-    lambda { document.bar }.should_not raise_error(NoMethodError)
-    lambda { document.bar = 'foo' }.should raise_error(NoMethodError)
+    lambda{ document.bar }.should_not raise_error(NoMethodError)
+    lambda{ document.bar = 'foo' }.should raise_error(NoMethodError)
   end
   
   it "should not create attributes that are pre-existing methods and raise an error" do
     document = Document.new :id => 'foo', :foo => 'bar'
-    lambda { document.create_attribute :send }.should raise_error(GitDocument::Errors::InvalidAttributeName)
+    lambda{ document.create_attribute :send }.should raise_error(GitDocument::Errors::InvalidAttributeName)
   end
   
   it "should remove a dymamic attribute" do
     document = Document.new :id => 'foo', :foo => 'bar'
     document.remove_attribute :foo
-    lambda { document.foo }.should raise_error(NoMethodError)
+    lambda{ document.foo }.should raise_error(NoMethodError)
   end
   
   it "should not remove a dymamic attribute that doesn't exist" do
     document = Document.new :id => 'foo'
-    lambda { document.remove_attribute :foo }.should raise_error(GitDocument::Errors::InvalidAttribute)
+    lambda{ document.remove_attribute :foo }.should raise_error(GitDocument::Errors::InvalidAttribute)
   end
   
   it "should not remove the id attribute" do
     document = Document.new :id => 'foo'
-    lambda { document.remove_attribute :id }.should raise_error(GitDocument::Errors::InvalidAttribute)
+    lambda{ document.remove_attribute :id }.should raise_error(GitDocument::Errors::InvalidAttribute)
   end
   
   it "should remove a read only attribute without problems" do
@@ -125,7 +125,7 @@ describe "GitDocument::Document" do
     document.create_attribute :foo, :read_only => true
     document.foo
     document.remove_attribute :foo
-    lambda { document.foo }.should raise_error(NoMethodError)
+    lambda{ document.foo }.should raise_error(NoMethodError)
   end
   
   it "should convert to model" do
@@ -257,7 +257,7 @@ describe "GitDocument::Document" do
   
   it "should raise an error when using save! and not saving" do
     document = Document.new
-    lambda {document.save!}.should raise_error(GitDocument::Errors::NotSaved)
+    lambda{document.save!}.should raise_error(GitDocument::Errors::NotSaved)
   end
   
   it "should reload the attributes" do
@@ -274,7 +274,7 @@ describe "GitDocument::Document" do
     Document.create :id => 'foo'
     document = Document.find 'foo'
     document.destroy
-    lambda { Document.find 'foo' }.should raise_error(GitDocument::Errors::NotFound)
+    lambda{ Document.find 'foo' }.should raise_error(GitDocument::Errors::NotFound)
   end
   
   it "should return the path to the repository" do
@@ -300,7 +300,7 @@ describe "GitDocument::Document" do
   end
 
   it "should not find and inexistent document" do
-    lambda { Document.find 'foo' }.should raise_error(GitDocument::Errors::NotFound)
+    lambda{ Document.find 'foo' }.should raise_error(GitDocument::Errors::NotFound)
   end
   
   it "should create a document" do
@@ -311,7 +311,7 @@ describe "GitDocument::Document" do
   end
   
   it "should raise an error when using create! and not creating" do
-    lambda {Document.create!}.should raise_error(GitDocument::Errors::NotSaved)
+    lambda{Document.create!}.should raise_error(GitDocument::Errors::NotSaved)
   end
 
   it "should have a history with all the document's versions, in descendent order" do
@@ -347,6 +347,20 @@ describe "GitDocument::Document" do
     document.foo = 'bar'
     document.save
     document.history.size.should == 1
+  end
+  
+  it "should be able to fork into a new document" do
+    document = Document.create :id => 'foo', :foo => 'bar'
+    forked = document.create_fork 'bar'
+    forked.id.should == 'bar'
+    forked.foo.should == 'bar'
+    forked.history.should == document.history
+  end
+  
+  it "should not fork into an existing document" do
+    Document.create :id => 'bar', :bar => 'foo'
+    document = Document.create :id => 'foo', :foo => 'bar'
+    lambda{ document.create_fork 'bar' }.should raise_error(GitDocument::Errors::AlreadyExists)
   end
 
 end

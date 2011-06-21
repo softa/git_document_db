@@ -10,6 +10,8 @@ module GitDocument
     end
     class NotSaved < StandardError
     end
+    class AlreadyExists < StandardError
+    end
     class InvalidAttributeName < StandardError
     end
     class InvalidAttribute < StandardError
@@ -219,6 +221,15 @@ module GitDocument
     
     def version(commit_id)
       self.class.find(self.id, commit_id)
+    end
+    
+    def create_fork(new_id)
+      raise GitDocument::Errors::NotFound unless File.directory?(path)
+      new_path = self.class.path(new_id)
+      raise GitDocument::Errors::AlreadyExists if File.directory?(new_path)
+      repo = Grit::Repo.new(path)
+      repo.fork_bare(new_path)
+      self.class.find new_id
     end
     
     private
