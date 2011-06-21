@@ -166,8 +166,8 @@ module GitDocument
             end
           end
           parents = repo.commit_count > 0 ? [repo.log.first.id] : nil
-          my_commit = index.commit(commit_message, parents)
-          repo.commit(my_commit)
+          commit = index.commit(commit_message, parents)
+          repo.commit(commit)
         end
         
         if self.respond_to? 'id='
@@ -253,16 +253,13 @@ module GitDocument
         merge_repo = Grit::Repo.new('.')
         merge_repo.git.remote({}, "add", "merge", self.class.path(from_id))
         merge_repo.git.pull({}, "merge", "master")
-        conflicts = false
-        merge_repo.status.files.map{ |file| file[1] }.each do |file|
-          conflicts = true if file.type == "M"
-        end
-        unless conflicts
+        no_conflicts = self.class.no_conflicts?(merge_repo)
+        if no_conflicts
           FileUtils.rm_rf(path)
           repo.git.clone({ :bare => true }, "#{merge_path}/.git", path)
           FileUtils.rm_rf(merge_path)
         end
-        !conflicts
+        no_conflicts
       end
     end
     
@@ -277,9 +274,29 @@ module GitDocument
       merges
     end
     
+    def resolve_conflicts!(from_id, attributes)
+      merge_path = self.merge_path(from_id)
+      raise GitDocument::Errors::NotFound unless File.directory?(merge_path)
+      repo = Grit::Repo.new(merge_path)
+      attributes.each do |name, value|
+        unless name.to_s == 'id'
+          add_file_to_repo repo, name, value
+        end
+      end
+      repo.commit_index("Resolving conflicts from merge with document ##{from_id}")
+      no_conflicts = self.class.no_conflicts?(repo)
+      if no_conflicts
+        FileUtils.rm_rf(path)
+        repo.git.clone({ :bare => true }, "#{merge_path}/.git", path)
+        FileUtils.rm_rf(merge_path)
+      end
+      no_conflicts
+    end
+    
     private
     
     def pending_merge(from_id)
+      raise GitDocument::Errors::NotFound unless File.directory?(self.merge_path(from_id))
       merge_repo = Grit::Repo.new(self.merge_path(from_id))
       files = []
       merge_repo.status.files.map{ |file| file[1] }.each do |file|
@@ -326,6 +343,26 @@ module GitDocument
       else
         name = "#{parent}/#{name}" unless parent.nil?
         index.add(name, value.to_json.gsub("\\n", "\n"))
+      end
+    end
+    
+    def add_file_to_repo(repo, name, value, parent = nil)
+      if value.is_a? Hash
+        new_parent = name
+        new_parent = "#{parent}/#{new_parent}" unless parent.nil?
+        value.each do |new_name, new_value|
+          add_file_to_repo repo, new_name, new_value, new_parent
+        end
+      else
+        name = "#{parent}/#{name}" unless parent.nil?
+        value = value.to_json.gsub("\\n", "\n")
+        repo_path = repo.path.gsub('/.git', '')
+        Dir.chdir(repo_path) do
+          File.open("#{name}", 'w') do |file|
+            file.write(value)
+          end
+          repo.git.add({}, name)
+        end
       end
     end
     
@@ -386,6 +423,14 @@ module GitDocument
       def jparse(str)
         return JSON.parse(str) if str =~ /\A\s*[{\[]/
         JSON.parse("[#{str}]")[0]
+      end
+      
+      def no_conflicts?(repo)
+        conflicts = false
+        repo.status.files.map{ |file| file[1] }.each do |file|
+          conflicts = true if file.type == "M"
+        end
+        !conflicts
       end
       
       private

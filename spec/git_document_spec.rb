@@ -413,8 +413,39 @@ describe "GitDocument::Document" do
     text['text'][3].should == {"both"=>["Line4\""]}
   end
   
-  it "should resolve conflicts"
+  it "should resolve conflicts, even with nested attributes" do
+    document = Document.create :id => 'foo', :foo => { :bar => 'foo' }
+    forked = document.create_fork 'bar'
+    forked.foo = { :bar => 'bar' }
+    forked.save
+    document.foo = { :bar => 'foobar' }
+    document.save
+    document.merge!(forked.id).should == false
+    document.pending_merges.size.should == 1
+    document.resolve_conflicts!('bar', :foo => { :bar => '123' }).should == true
+    document.reload
+    document.pending_merges.should == []
+    document.id.should == 'foo'
+    document.foo.should == { :bar => '123' }
+  end
 
-  it "should not resolve conflicts unless all files are OK"
+  it "should not resolve conflicts unless all files are OK" do
+    document = Document.create :id => 'foo', :foo => { :bar => 'foo' }, :text => "ABC"
+    forked = document.create_fork 'bar'
+    forked.foo = { :bar => 'bar' }
+    forked.text = "CBA"
+    forked.save
+    document.foo = { :bar => 'foobar' }
+    document.text = "BCA"
+    document.save
+    document.merge!(forked.id).should == false
+    document.pending_merges.size.should == 1
+    document.resolve_conflicts!('bar', :foo => { :bar => '123' }).should == false
+    document.reload
+    document.pending_merges.size.should == 1
+    document.id.should == 'foo'
+    document.foo.should == { :bar => 'foobar' }
+    document.text.should == "BCA"
+  end
   
 end
