@@ -17,11 +17,20 @@ get '/documents/:id' do |id|
 end
 
 post '/documents' do
-  document = Document.create params
-  document.to_json
+  if params[:id]
+    document = Document.create params
+    document.to_json
+  else
+    406
+  end
 end
 
 delete '/documents/:id' do |id|
-  document = Document.find id
-  document.destroy
+  begin
+    document = Document.find id
+    document.destroy
+    nil
+  rescue
+    not_found
+  end
 end

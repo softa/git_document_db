@@ -14,14 +14,24 @@ describe "Main" do
     last_response.body.should == '{"id":"foobar"}'
   end
   
-  it "should not create a document without a id"# do
-  #   post '/documents'
-  #   last_response.status.should == '404'
-  # end
+  it "should not create a document without a id" do
+    post '/documents'
+    last_response.status.should == 406
+  end
 
   it "should create a document with attributes"
 
-  it "should delete a document"
+  it "should delete a document" do
+    post '/documents', {:id => 'foobar'}
+    delete '/documents/foobar'
+    last_response.status.should == 200
+  end
+  
+  it "should receive 404 response when trying to delete a document that doesn't exists" do
+    delete '/documents/non_existant_document'
+    last_response.status.should == 404
+    last_response.body.should == ''
+  end
   
   it "should update a document"
 end
