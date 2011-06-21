@@ -367,4 +367,54 @@ describe "GitDocument::Document" do
     lambda{ document.create_fork 'bar' }.should raise_error(GitDocument::Errors::AlreadyExists)
   end
 
+  it "should merge another document, even with nested objects" do
+    document = Document.create :id => 'foo', :foo => 'bar'
+    forked = document.create_fork 'bar'
+    forked.create_attribute :bar
+    forked.bar = { :foo => { :bar => 'foo' } }
+    forked.save
+    document.merge!(forked.id).should == true
+    document.reload
+    document.id.should == 'foo'
+    document.foo.should == 'bar'
+    document.bar.should == { :foo => { :bar => 'foo' } }
+  end
+  
+  it "should merge another document and parse conflicts, even with nested objects" do
+    document = Document.create :id => 'foo', :foo => 'bar', :text => "Line1\nLine2\nLine2\nLine2\nLine2\nLine2\nLine3\nLine4"
+    forked = document.create_fork 'bar'
+    forked.create_attribute :bar
+    forked.bar = { :foo => { :bar => 'foo' } }
+    forked.text = "Line1_forked\nLine2\nLine2\nLine2\nLine2\nLine2\nLine3_forked\nLine4"
+    forked.save
+    document.create_attribute :bar
+    document.bar = { :foo => { :bar => 'bar' } }
+    document.text = "Line1_document\nLine2\nLine2\nLine2\nLine2\nLine2\nLine3_document\nLine4"
+    document.save
+    document.merge!(forked.id).should == false
+    document.pending_merges.size.should == 1
+    merge = document.pending_merges[0]
+    merge['from_id'].should == forked.id
+    attributes = merge['attributes']
+    bar = attributes['bar']['foo']['bar']
+    bar['conflicts'].should == 1
+    bar['sections'].should == 1
+    bar['text'].size.should == 1
+    bar = bar['text'][0]
+    bar['ours'].should == ["\"bar\""]
+    bar['theirs'].should == ["\"foo\""]
+    text = attributes['text']
+    text['conflicts'].should == 2
+    text['sections'].should == 4
+    text['text'].size.should == 4
+    text['text'][0].should == {"ours"=>["\"Line1_document"], "theirs"=>["\"Line1_forked"]}
+    text['text'][1].should == {"both"=>["Line2", "Line2", "Line2", "Line2", "Line2"]}
+    text['text'][2].should == {"ours"=>["Line3_document"], "theirs"=>["Line3_forked"]}
+    text['text'][3].should == {"both"=>["Line4\""]}
+  end
+  
+  it "should resolve conflicts"
+
+  it "should not resolve conflicts unless all files are OK"
+  
 end

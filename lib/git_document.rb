@@ -161,7 +161,9 @@ module GitDocument
         if new_record? or self.changed?
           index = repo.index
           attributes.each do |name, value|
-            add_attribute_to_index index, name, value
+            unless name.to_s == 'id'
+              add_attribute_to_index index, name, value
+            end
           end
           parents = repo.commit_count > 0 ? [repo.log.first.id] : nil
           my_commit = index.commit(commit_message, parents)
@@ -204,6 +206,14 @@ module GitDocument
       self.class.path id
     end
 
+    def merge_path(from_id)
+      self.class.merge_path id, from_id
+    end
+
+    def merges_path
+      self.class.merges_path id
+    end
+
     def to_s
       "#<#{self.class.name}:#{__id__} id=#{id}, attributes=#{attributes.inspect}>"
     end
@@ -232,7 +242,75 @@ module GitDocument
       self.class.find new_id
     end
     
+    def merge!(from_id)
+      raise GitDocument::Errors::NotFound unless File.directory?(path)
+      raise GitDocument::Errors::NotFound unless File.directory?(self.class.path(from_id))
+      repo = Grit::Repo.new(path)
+      merge_path = self.merge_path(from_id)
+      FileUtils.rm_rf(merge_path)
+      repo.git.clone({}, path, merge_path)
+      Dir.chdir(merge_path) do
+        merge_repo = Grit::Repo.new('.')
+        merge_repo.git.remote({}, "add", "merge", self.class.path(from_id))
+        merge_repo.git.pull({}, "merge", "master")
+        conflicts = false
+        merge_repo.status.files.map{ |file| file[1] }.each do |file|
+          conflicts = true if file.type == "M"
+        end
+        unless conflicts
+          FileUtils.rm_rf(path)
+          repo.git.clone({ :bare => true }, "#{merge_path}/.git", path)
+          FileUtils.rm_rf(merge_path)
+        end
+        !conflicts
+      end
+    end
+    
+    def pending_merges
+      FileUtils.mkdir_p self.merges_path
+      dir = Dir.new self.merges_path
+      merges = []
+      dir.each do |from_id|
+        next if [".", ".."].include? from_id
+        merges << pending_merge(from_id)
+      end
+      merges
+    end
+    
     private
+    
+    def pending_merge(from_id)
+      merge_repo = Grit::Repo.new(self.merge_path(from_id))
+      files = []
+      merge_repo.status.files.map{ |file| file[1] }.each do |file|
+        next unless file.type == "M"
+        files << file.path unless files.include? file.path
+      end
+      merge = { 'from_id' => from_id }
+      attributes = {}
+      files.each do |file|
+        content = File.open("#{self.merge_path(from_id)}/#{file}", 'rb') { |f| f.read }
+        file_merge = Grit::Merge.new(content)
+        attribute = {
+          'conflicts' => file_merge.conflicts,
+          'sections' => file_merge.sections,
+          'text' => file_merge.text
+        }
+        # Weird code to convert a path like to foo/bar/foo to
+        # A Hash tree like { :foo => { :bar => { :foo => attribute } } }
+        # Couldn't think of anything easier, but I'm sure there must be a better way
+        levels = file.split('/')
+        levels.map! { |level| "\"#{level}\"" }
+        attribute_json = levels.join(':{')
+        attribute_json = attribute_json + ':' + attribute.to_json
+        (1...levels.size).each { attribute_json = attribute_json + '}' }
+        attribute_json = "{#{attribute_json}}"
+        attribute = self.class.jparse(attribute_json)
+        attributes.merge!(attribute)
+      end
+      merge['attributes'] = attributes
+      merge
+    end
     
     def attributes
       @attributes ||= {}
@@ -247,7 +325,7 @@ module GitDocument
         end
       else
         name = "#{parent}/#{name}" unless parent.nil?
-        index.add(name, value.to_json)
+        index.add(name, value.to_json.gsub("\\n", "\n"))
       end
     end
     
@@ -265,12 +343,15 @@ module GitDocument
         "#{root_path}/documents/#{id}.git"
       end
       
+      def merge_path(id, from_id)
+        "#{root_path}/merges/#{id}/#{from_id}"
+      end
+      
+      def merges_path(id)
+        "#{root_path}/merges/#{id}"
+      end
+      
       def load(id, commit_id = nil)
-        # Workaround to fix JSON.parse incapacity of parsing root objects that are not Array or Hashes
-        def jparse(str)
-          return JSON.parse(str) if str =~ /\A\s*[{\[]/
-          JSON.parse("[#{str}]")[0]
-        end
         path = self.path id
         raise GitDocument::Errors::NotFound unless File.directory?(path)
         repo = Grit::Repo.new(path)
@@ -301,6 +382,12 @@ module GitDocument
         document
       end
       
+      # Workaround to fix JSON.parse incapacity of parsing root objects that are not Array or Hashes
+      def jparse(str)
+        return JSON.parse(str) if str =~ /\A\s*[{\[]/
+        JSON.parse("[#{str}]")[0]
+      end
+      
       private
       
       def load_tree(tree, attributes)
@@ -309,7 +396,7 @@ module GitDocument
             attributes[git_object.name.to_sym] = {}
             load_tree(git_object, attributes[git_object.name.to_sym])
           else
-            attributes[git_object.name.to_sym] = jparse(git_object.data)
+            attributes[git_object.name.to_sym] = jparse(git_object.data.gsub("\n", "\\n"))
           end
         end
       end
