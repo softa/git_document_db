@@ -44,3 +44,8 @@ delete '/documents/:id' do |id|
     not_found
   end
 end
+
+get '/documents/:id/history' do |id|
+  document = Document.find id
+  document.history.to_json
+end

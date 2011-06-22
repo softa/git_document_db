@@ -38,7 +38,8 @@ describe "Main" do
     last_response.status.should == 404
     last_response.body.should == ''
   end
-  
+
+
   it "should update a document" do
     post '/documents', {:id => 'foobar', :foo => 'bar'}
 
@@ -52,5 +53,15 @@ describe "Main" do
     last_response.body.should == '{"id":"foobar","foo":"baz"}'
   end
 
-  it "should get the document edit history"
+  it "should get the document edit history" # do
+   #    post '/documents', {:id => 'foo', :counter => 0}
+   #    put '/documents/foo', {:id => 'foo', :counter => 1}
+   #    put '/documents/foo', {:id => 'foo', :counter => 2}
+   # 
+   #    get '/documents/foo/history'
+   #    last_response.status.should == 200
+   #    last_response.headers["Content-Type"].should == "application/json"
+   # 
+   #    (JSON last_response.body).size.should == 3
+   #  end
 end
