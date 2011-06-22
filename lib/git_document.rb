@@ -126,7 +126,7 @@ module GitDocument
 
     def attributes=(attributes)
       attributes.each do |k,v|
-        @attributes[k.to_s] = v
+        self.send(k.to_s+'=', v.to_s) unless k == :id
       end
     end
 
