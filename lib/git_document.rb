@@ -126,7 +126,7 @@ module GitDocument
 
     def attributes=(attributes)
       attributes.each do |k,v|
-        self.send(k.to_s+'=', v.to_s) unless k == :id
+        self.send(k.to_s+'=', v.to_s) unless k.to_sym == :id
       end
     end
 
