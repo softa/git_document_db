@@ -25,6 +25,16 @@ post '/documents' do
   end
 end
 
+put '/documents/:id' do |id|
+  begin
+    document = Document.find id
+    document.update_attributes(params)
+    document.save
+  rescue
+    not_found
+  end
+end
+
 delete '/documents/:id' do |id|
   begin
     document = Document.find id

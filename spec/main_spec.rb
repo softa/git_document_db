@@ -39,7 +39,18 @@ describe "Main" do
     last_response.body.should == ''
   end
   
-  it "should update a document"
+  it "should update a document" do
+    post '/documents', {:id => 'foobar', :foo => 'bar'}
+
+    # updating a document should return the full document, or olnly updated attributes?
+    put '/documents/foobar', {:foo => 'baz'}
+    last_response.status.should == 200
+    
+    get '/documents/foobar'
+    last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    last_response.body.should == '{"id":"foobar","foo":"baz"}'
+  end
 
   it "should get the document edit history"
 end
