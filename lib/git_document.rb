@@ -54,11 +54,11 @@ module GitDocument
         @changed_attributes.clear
       end
     end
-    
+
     def errors
       @errors
     end
-    
+
     def create_attribute(name, options = {})
       return false if attributes.has_key?(name.to_s)
       raise GitDocument::Errors::InvalidAttributeName if self.respond_to?(name.to_s) and name.to_sym != :id
@@ -123,7 +123,17 @@ module GitDocument
         #{ undef_id }
       EOF
     end
-          
+
+    def attributes=(attributes)
+      attributes.each do |k,v|
+        @attributes[k.to_s] = v
+      end
+    end
+
+    def update_attributes(attributes)
+      self.attributes = attributes
+    end
+
     def to_model
       self
     end
