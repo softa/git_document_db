@@ -37,6 +37,8 @@ module GitDocument
         validates_presence_of :id
         validates_format_of :id, :with => /^[^\/?*:;{}\\]+$/, :message => "must be a valid file name"
         
+        attr_reader :commit_id
+        
       end
 
       base.extend(ClassMethods)
@@ -178,6 +180,7 @@ module GitDocument
           end
           parents = repo.commit_count > 0 ? [repo.log.first.id] : nil
           commit = index.commit(commit_message, parents)
+          @commit_id = commit
           repo.commit(commit)
         end
         
@@ -398,7 +401,7 @@ module GitDocument
       def merges_path(id)
         "#{root_path}/merges/#{id}"
       end
-      
+
       def load(id, commit_id = nil)
         path = self.path id
         raise GitDocument::Errors::NotFound unless File.directory?(path)
@@ -409,6 +412,7 @@ module GitDocument
         else
           commit = repo.log.first
         end
+        @commit_id = commit.id
         load_tree(commit.tree, attributes)
         attributes
       end

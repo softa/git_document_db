@@ -166,9 +166,11 @@ describe "GitDocument::Document" do
   it "should save a new record" do
     document = Document.new :id => 'foo', :foo => 'bar'
     document.save.should == true
+    commit_id = document.commit_id
     document.reload
     document.id.should == 'foo'
     document.foo.should == 'bar'
+    document.commit_id.should == commit_id
   end
   
   it "should not save without an id" do
@@ -203,9 +205,11 @@ describe "GitDocument::Document" do
   end
   
   it "should save and retrieve string values" do
-    Document.create :id => 'foo', :foo => 'bar'
+    d = Document.create :id => 'foo', :foo => 'bar'
+    commit_id = d.commit_id
     document = Document.find 'foo'
     document.foo.should === 'bar'
+    document.commit_id.should == nil
   end
   
   it "should save and retrieve numeric values" do
