@@ -43,9 +43,15 @@ describe "Main" do
   it "should update a document" do
     post '/documents', {:id => 'foobar', :foo => 'bar'}
 
-    # updating a document should return the full document, or olnly updated attributes?
+    get '/documents/foobar'
+    last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    last_response.body.should == '{"id":"foobar","foo":"bar"}'
+
     put '/documents/foobar', {:foo => 'baz'}
     last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    last_response.body.should == '{"id":"foobar","foo":"baz"}'
     
     get '/documents/foobar'
     last_response.status.should == 200

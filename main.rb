@@ -29,7 +29,7 @@ put '/documents/:id' do |id|
   begin
     document = Document.find id
     document.update_attributes(params)
-    document.save
+    document.to_json
   rescue
     not_found
   end
