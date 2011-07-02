@@ -75,4 +75,11 @@ describe "Main" do
     history = JSON.parse(last_response.body)
     history.size.should == 3
   end
+  
+  it "should get a specific version of the document with it's commit_id"
+  it "should create a fork and return the new document"
+  it "should merge a document and return the merged document if OK; if not, raise 409"
+  it "should get a list of pending merges for a document"
+  it "should resolve conflicts and return the merged document if OK; if not, raise 409"
+  
 end
