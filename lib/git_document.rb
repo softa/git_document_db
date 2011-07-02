@@ -49,8 +49,8 @@ module GitDocument
         @new_record = new_record
         @errors = ActiveModel::Errors.new(self)
         create_attribute :id, :read_only => !@new_record, :value => (args[:id] || args['id'])
-        args.each do |attribute, value|
-          create_attribute attribute, :value => value
+        args.each do |name, value|
+          create_attribute name, :value => value
         end
         @previously_changed = changes
         @changed_attributes.clear
@@ -124,12 +124,6 @@ module GitDocument
         undef reset_#{name}!
         #{ undef_id }
       EOF
-    end
-
-    def attributes=(attributes)
-      attributes.each do |k,v|
-        self.send(k.to_s+'=', v.to_s) unless k.to_sym == :id
-      end
     end
 
     def update_attributes(attributes)
@@ -206,8 +200,8 @@ module GitDocument
         remove_attribute(attribute) unless attribute.to_sym == :id
       end
       args = self.class.load(self.id)
-      args.each do |attribute, value|
-        create_attribute attribute, :value => value
+      args.each do |name, value|
+        create_attribute name, :value => value
       end
     end
 
@@ -346,6 +340,13 @@ module GitDocument
     
     def attributes
       @attributes ||= {}
+    end
+
+    def attributes=(new_attributes)
+      new_attributes.each do |name, value|
+        self.create_attribute(name) unless attributes.has_key?(name)
+        self.send(name.to_s + '=', value) unless name.to_sym == :id
+      end
     end
 
     def add_attribute_to_index(index, name, value, parent = nil)

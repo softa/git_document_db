@@ -453,12 +453,13 @@ describe "GitDocument::Document" do
     document.text.should == "BCA"
   end
 
-  it "should update attributes" do
+  it "should update attributes, and create new attributes if necessary" do
     document = Document.create :id => 'foo', :foo => 'bar'
-    document.update_attributes(:foo => 'baz')
+    document.update_attributes(:foo => 'baz', :new_attribute => 'foo')
     document.reload
     document.foo.should == 'baz'
     document.id.should == 'foo'
+    document.new_attribute.should == 'foo'
   end
 
 end
