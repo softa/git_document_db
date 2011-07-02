@@ -456,6 +456,7 @@ describe "GitDocument::Document" do
   it "should update attributes" do
     document = Document.create :id => 'foo', :foo => 'bar'
     document.update_attributes(:foo => 'baz')
+    document.reload
     document.foo.should == 'baz'
     document.id.should == 'foo'
   end

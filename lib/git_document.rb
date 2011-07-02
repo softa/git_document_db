@@ -134,6 +134,7 @@ module GitDocument
 
     def update_attributes(attributes)
       self.attributes = attributes
+      self.save
     end
 
     def to_model
