@@ -53,10 +53,10 @@ describe "GitDocument::Document" do
     document.changed?.should == true
     document.id_changed?.should == false
     document.foo_changed?.should == true
-    document.changes.should == { :foo => ['bar', 'foo bar'] }
+    document.changes.should == { 'foo' => ['bar', 'foo bar'] }
     document.id = "bar"
     document.id_changed?.should == true
-    document.changes.should == { :foo => ['bar', 'foo bar'], :id => ['foo', 'bar'] }
+    document.changes.should == { 'foo' => ['bar', 'foo bar'], 'id' => ['foo', 'bar'] }
     document.save
     document.changed?.should == false
   end
@@ -68,7 +68,7 @@ describe "GitDocument::Document" do
     document.foo = "foo bar"
     document.changed?.should == true
     document.foo_changed?.should == true
-    document.changes.should == { :foo => [nil, 'foo bar'] }
+    document.changes.should == { 'foo' => [nil, 'foo bar'] }
     document.save
     document.changed?.should == false
   end
