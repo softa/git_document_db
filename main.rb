@@ -3,6 +3,14 @@ require 'sinatra'
 require File.join(File.dirname(__FILE__), 'document')
 Document.root_path = File.join(File.dirname(__FILE__), 'db', Sinatra::Application.environment.to_s)
 
+def json_attributes
+  begin
+    JSON.parse(request.body.read.to_s)
+  rescue
+    false
+  end
+end
+
 before do
   content_type 'application/json'
 end
@@ -17,8 +25,9 @@ get '/documents/:id' do |id|
 end
 
 post '/documents' do
-  if params[:id]
-    document = Document.create params
+  return 400 unless attributes = json_attributes
+  if attributes["id"]
+    document = Document.create attributes
     document.to_json
   else
     406
@@ -26,9 +35,10 @@ post '/documents' do
 end
 
 put '/documents/:id' do |id|
+  return 400 unless attributes = json_attributes
   begin
     document = Document.find id
-    document.update_attributes(params)
+    document.update_attributes(attributes)
     document.to_json
   rescue
     not_found
@@ -39,7 +49,7 @@ delete '/documents/:id' do |id|
   begin
     document = Document.find id
     document.destroy
-    nil
+    document.to_json
   rescue
     not_found
   end
@@ -51,7 +61,13 @@ get '/documents/:id/history' do |id|
 end
 
 get '/documents/:id/version/:commit_id' do |id, commit_id|
-  # TODO return the version's JSON
+  begin
+    document = Document.find id
+    version = document.version(commit_id)
+    version.to_json
+  rescue
+    not_found
+  end
 end
 
 post '/documents/:id/fork' do |id|

@@ -244,6 +244,7 @@ describe "GitDocument::Document" do
       :foo => {
         :bar => 45.99,
         :foo => true,
+        :nil => nil,
         :array => ["1", "2", "3"]
       },
       :bar => {
@@ -256,7 +257,7 @@ describe "GitDocument::Document" do
       }
     })
     document = Document.find 'foo'
-    document.foo.should == { :bar => 45.99, :foo => true, :array => ["1", "2", "3"] }
+    document.foo.should == { :bar => 45.99, :foo => true, :nil => nil, :array => ["1", "2", "3"] }
     document.bar.should == { :foo_bar => 'bar_foo', :abc => { :foo => 123, :bar => 456, :array_of_hashes => [{ "foo" => "bar" }, { "foo" => "foobar" }] } }
   end
   
