@@ -298,7 +298,8 @@ module GitDocument
           add_file_to_repo repo, name, value
         end
       end
-      repo.commit_index("Resolving conflicts from merge with document ##{from_id}")
+      message = "Resolving conflicts from merge with document ##{from_id}"
+      repo.git.commit({}, '-m', message, "--author=#{self.actor}")
       no_conflicts = self.class.no_conflicts?(repo)
       if no_conflicts
         FileUtils.rm_rf(path)

@@ -480,4 +480,20 @@ describe "GitDocument::Document" do
     document.history[0][:user_id].should == "bar"
   end
 
+  it "should commit with a user_id when resolving conflicts as well", :now => true do
+    document = Document.create :id => 'foo', :user_id => 1, :foo => { :bar => 'foo' }
+    forked = document.create_fork 'bar'
+    forked.update_attributes :user_id => 2, :foo => { :bar => 'bar' }
+    document.update_attributes :foo => { :bar => 'foobar' }
+    document.merge!(forked.id).should == false
+    document.pending_merges.size.should == 1
+    document.resolve_conflicts!('bar', :foo => { :bar => '123' }).should == true
+    document.reload
+    document.history.size.should == 4
+    document.history[0][:user_id].should == "1"
+    document.history[1][:user_id].should == "1"
+    document.history[2][:user_id].should == "2"
+    document.history[3][:user_id].should == "1"
+  end
+
 end
