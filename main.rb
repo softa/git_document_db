@@ -56,8 +56,12 @@ delete '/documents/:id' do |id|
 end
 
 get '/documents/:id/history' do |id|
-  document = Document.find id
-  document.history.to_json
+  begin
+    document = Document.find id
+    document.history.to_json
+  rescue
+    not_found
+  end
 end
 
 get '/documents/:id/version/:commit_id' do |id, commit_id|
@@ -70,20 +74,50 @@ get '/documents/:id/version/:commit_id' do |id, commit_id|
   end
 end
 
-post '/documents/:id/fork' do |id|
-  # TODO return the new document
+post '/documents/:id/fork/:new_id' do |id, new_id|
+  begin
+    document = Document.find id
+    fork = document.create_fork(new_id)
+    fork.to_json
+  rescue
+    not_found
+  end
 end
 
 put '/documents/:id/merge/:from_id' do |id, from_id|
-  # TODO merge and return the merged document if it was OK
-  # TODO return 409 (Conflict) if it wasn't OK
+  begin
+    document = Document.find id
+    if document.merge!(from_id)
+      document.reload
+      document.to_json
+    else
+      409
+    end
+  rescue
+    not_found
+  end
 end
 
 get '/documents/:id/pending_merges' do |id|
-  # TODO return the pending_merges object as JSON
+  begin
+    document = Document.find id
+    document.pending_merges.to_json
+  rescue
+    not_found
+  end
 end
 
 put '/documents/:id/resolve_conflicts/:from_id' do |id, from_id|
-  # TODO resolve the conflicts and return the new document if it was OK
-  # TODO return 409 (Conflict) if it wasn't OK
+  return 400 unless attributes = json_attributes
+  begin
+    document = Document.find id
+    if document.resolve_conflicts!(from_id, attributes)
+      document.reload
+      document.to_json
+    else
+      409
+    end
+  rescue
+    not_found
+  end
 end

@@ -35,6 +35,7 @@ describe "Main" do
     last_response.should be_ok
     last_response.headers["Content-Type"].should == "application/json"
     JSON.parse(last_response.body).should == data
+    
   end
 
   it "should not create a document without attributes" do
@@ -129,9 +130,86 @@ describe "Main" do
     
   end
   
-  it "should create a fork and return the new document"
-  it "should merge a document and return the merged document if OK; if not, raise 409"
-  it "should get a list of pending merges for a document"
-  it "should resolve conflicts and return the merged document if OK; if not, raise 409"
+  it "should create a fork and return the new document" do
+    
+    post '/documents', {"id" => "foo", "foo" => "bar"}.to_json
+    post '/documents/foo/fork/bar'
+    last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    JSON.parse(last_response.body).should == {"id" => "bar", "foo" => "bar"}
+    
+  end
+  
+  it "should merge a document and return the merged document if OK" do
+    
+    post '/documents', {"id" => "foo", "foo" => "bar"}.to_json
+    post '/documents/foo/fork/bar'
+    put '/documents/bar', {:foo => "baz"}.to_json
+    
+    put '/documents/foo/merge/bar'
+    last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    JSON.parse(last_response.body).should == {"id" => "foo", "foo" => "baz"}
+    
+  end
+  
+  it "should merge a document and return 409 if there were conflicts" do
+    
+    post '/documents', {"id" => "foo", "foo" => "bar"}.to_json
+    post '/documents/foo/fork/bar'
+    put '/documents/foo', {:foo => "baz"}.to_json
+    put '/documents/bar', {:foo => "zab"}.to_json
+    
+    put '/documents/foo/merge/bar'
+    last_response.status.should == 409
+    
+  end
+  
+  it "should get a list of pending merges for a document" do
+
+    post '/documents', {"id" => "foo", "foo" => "bar", "bar" => "foo"}.to_json
+    post '/documents/foo/fork/bar'
+    put '/documents/foo', {:foo => "baz"}.to_json
+    put '/documents/bar', {:foo => "zab"}.to_json
+    put '/documents/foo/merge/bar'
+    
+    get '/documents/foo/pending_merges'
+    last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    pending = JSON.parse(last_response.body)
+    pending.size.should == 1
+    
+    merge = pending[0]
+    merge["from_id"].should == "bar"
+    merge["attributes"].should == {
+      "foo" => {
+        "conflicts" => 1,
+        "sections" => 1,
+        "text" => [{
+          "ours" => ['"baz"'],
+          "theirs" => ['"zab"'],
+        }]
+      }
+    }
+
+  end
+  
+  it "should resolve conflicts and return the merged document if OK; if not, raise 409" do
+    
+    post '/documents', {"id" => "foo", "foo" => "bar", "bar" => "foo"}.to_json
+    post '/documents/foo/fork/bar'
+    put '/documents/foo', {:foo => "baz"}.to_json
+    put '/documents/bar', {:foo => "zab"}.to_json
+    put '/documents/foo/merge/bar'
+
+    put '/documents/foo/resolve_conflicts/bar', { :bar => "foo" }.to_json
+    last_response.status.should == 409
+
+    put '/documents/foo/resolve_conflicts/bar', { :foo => "abc" }.to_json
+    last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    JSON.parse(last_response.body).should == {"id" => "foo", "foo" => "abc", "bar" => "foo"}
+    
+  end
   
 end
