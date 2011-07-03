@@ -37,7 +37,7 @@ PLATFORMS
 DEPENDENCIES
   activemodel
   grit
-  json
+  json (= 1.5.2)
   rack-test
   rspec
   sinatra
