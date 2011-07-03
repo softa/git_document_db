@@ -169,12 +169,12 @@ module GitDocument
         if new_record? or self.changed?
           index = repo.index
           attributes.each do |name, value|
-            unless name.to_s == 'id'
+            unless name.to_s == 'id' or name.to_s == 'user_id'
               add_attribute_to_index index, name, value
             end
           end
           parents = repo.commit_count > 0 ? [repo.log.first.id] : nil
-          commit = index.commit(commit_message, parents)
+          commit = index.commit(commit_message, parents, self.actor)
           @commit_id = commit
           repo.commit(commit)
         end
@@ -197,7 +197,7 @@ module GitDocument
     
     def reload
       attributes.keys.each do |attribute|
-        remove_attribute(attribute) unless attribute.to_sym == :id
+        remove_attribute(attribute) unless attribute.to_sym == :id or attribute.to_sym == :user_id
       end
       args = self.class.load(self.id)
       args.each do |name, value|
@@ -235,7 +235,13 @@ module GitDocument
       return nil if new_record?
       raise GitDocument::Errors::NotFound unless File.directory?(path)
       repo = Grit::Repo.new(path)
-      repo.log.map &:id
+      repo.log.map do |commit|
+        {
+          :commit_id => commit.id,
+          :user_id => commit.author.name,
+          :timestamp => commit.authored_date
+        }
+      end
     end
     
     def version(commit_id)
@@ -288,7 +294,7 @@ module GitDocument
       raise GitDocument::Errors::NotFound unless File.directory?(merge_path)
       repo = Grit::Repo.new(merge_path)
       attributes.each do |name, value|
-        unless name.to_s == 'id'
+        unless name.to_s == 'id' or name.to_s == 'user_id'
           add_file_to_repo repo, name, value
         end
       end
@@ -300,6 +306,15 @@ module GitDocument
         FileUtils.rm_rf(merge_path)
       end
       no_conflicts
+    end
+    
+    def actor
+      if self.respond_to? :user_id
+        user = user_id
+      else
+        user = "anonymous"
+      end
+      Grit::Actor.from_string("#{user} <#{user}@gitdocument.rb>")
     end
     
     private

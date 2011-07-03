@@ -113,17 +113,17 @@ describe "Main" do
     history = JSON.parse(last_response.body)
     history.size.should == 3
     
-    get "/documents/foo/version/#{history[2]}"
+    get "/documents/foo/version/#{history[2]['commit_id']}"
     last_response.status.should == 200
     last_response.headers["Content-Type"].should == "application/json"
     last_response.body.should == '{"id":"foo","counter":0}'
     
-    get "/documents/foo/version/#{history[1]}"
+    get "/documents/foo/version/#{history[1]['commit_id']}"
     last_response.status.should == 200
     last_response.headers["Content-Type"].should == "application/json"
     last_response.body.should == '{"id":"foo","counter":1}'
     
-    get "/documents/foo/version/#{history[0]}"
+    get "/documents/foo/version/#{history[0]['commit_id']}"
     last_response.status.should == 200
     last_response.headers["Content-Type"].should == "application/json"
     last_response.body.should == '{"id":"foo","counter":2}'

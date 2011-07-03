@@ -334,13 +334,22 @@ describe "GitDocument::Document" do
     document.bar = 'foo'
     document.save
     document.history.size.should == 3
-    document1 = document.version(document.history[2])
+    version = document.history[2]
+    version[:user_id].should == "anonymous"
+    version[:timestamp].is_a?(Time).should == true
+    document1 = document.version(version[:commit_id])
     document1.id.should == 'foo'
     document1.foo.should == 'bar'
-    document2 = document.version(document.history[1])
+    version = document.history[1]
+    version[:user_id].should == "anonymous"
+    version[:timestamp].is_a?(Time).should == true
+    document2 = document.version(version[:commit_id])
     document2.id.should == 'foo'
     document2.foo.should == 'foobar'
-    document3 = document.version(document.history[0])
+    version = document.history[0]
+    version[:user_id].should == "anonymous"
+    version[:timestamp].is_a?(Time).should == true
+    document3 = document.version(version[:commit_id])
     document3.id.should == 'foo'
     document3.foo.should == 'foobar'
     document3.bar.should == 'foo'
@@ -461,6 +470,14 @@ describe "GitDocument::Document" do
     document.foo.should == 'baz'
     document.id.should == 'foo'
     document.new_attribute.should == 'foo'
+  end
+  
+  it "should commit with a user_id, if set, and return the user on history" do
+    document = Document.create :id => 'with_user', :user_id => "foo", :foo => 'bar'
+    document.update_attributes :user_id => "bar", :foo => 'baz'
+    document.history.size.should == 2
+    document.history[1][:user_id].should == "foo"
+    document.history[0][:user_id].should == "bar"
   end
 
 end
