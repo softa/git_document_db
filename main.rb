@@ -19,16 +19,20 @@ get '/documents/:id' do |id|
   begin
     document = Document.find id
     document.to_json
-  rescue
-    not_found
+  #rescue
+  #  not_found
   end
 end
 
 post '/documents' do
   return 400 unless attributes = json_attributes
   if attributes["id"]
-    document = Document.create attributes
-    document.to_json
+    begin
+      document = Document.create! attributes
+      document.to_json
+    rescue
+      409
+    end
   else
     406
   end

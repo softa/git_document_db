@@ -1,3 +1,5 @@
+#coding: utf-8
+
 require File.join(File.dirname(__FILE__), 'spec_helper')
 require File.join(File.dirname(__FILE__), '..', 'lib', 'git_document')
 
@@ -494,6 +496,12 @@ describe "GitDocument::Document" do
     document.history[1][:user_id].should == "1"
     document.history[2][:user_id].should == "2"
     document.history[3][:user_id].should == "1"
+  end
+  
+  it "should store UTF-8 special characters as well", :new => true do
+    Document.create :id => 'foo', :foo => 'áéíóúçãõ'
+    document = Document.find 'foo'
+    document.foo.should === 'áéíóúçãõ'
   end
 
 end

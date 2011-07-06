@@ -1,3 +1,5 @@
+#coding: utf-8
+
 require File.join(File.dirname(__FILE__), 'spec_helper')
 
 describe "Main" do
@@ -210,6 +212,17 @@ describe "Main" do
     last_response.headers["Content-Type"].should == "application/json"
     JSON.parse(last_response.body).should == {"id" => "foo", "foo" => "abc", "bar" => "foo"}
     
+  end
+  
+  it "should store UTF-8 special characters as well" do
+    post '/documents', {"id" => "foo", "foo" => "áéíóúçãõ"}.to_json
+    last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    JSON.parse(last_response.body).should == {"id" => "foo", "foo" => "áéíóúçãõ"}
+    get '/documents/foo'
+    last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    JSON.parse(last_response.body).should == {"id" => "foo", "foo" => "áéíóúçãõ"}
   end
   
 end
