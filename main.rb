@@ -19,8 +19,8 @@ get '/documents/:id' do |id|
   begin
     document = Document.find id
     document.to_json
-  #rescue
-  #  not_found
+  rescue
+    not_found
   end
 end
 
