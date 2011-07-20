@@ -2,3 +2,5 @@ credentials.yml
 documents/*
 db/*
 *.tmproj
+.bundle
+
