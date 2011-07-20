@@ -131,3 +131,13 @@ put '/documents/:id/resolve_conflicts/:from_id' do |id, from_id|
     not_found
   end
 end
+
+get '/documents/:id/diff/:from_id' do |id, from_id|
+  begin
+    document = Document.find id
+    document.diff(from_id).to_json
+  rescue
+    not_found
+  end
+end
+

@@ -219,6 +219,10 @@ module GitDocument
       self.class.merge_path id, from_id
     end
 
+    def diff_path(from_id)
+      self.class.diff_path id, from_id
+    end
+
     def merges_path
       self.class.merges_path id
     end
@@ -318,6 +322,22 @@ module GitDocument
       Grit::Actor.from_string("#{user} <#{user}@gitdocument.rb>")
     end
     
+    def diff(from_id)
+      raise GitDocument::Errors::NotFound unless File.directory?(path)
+      raise GitDocument::Errors::NotFound unless File.directory?(self.class.path(from_id))
+      repo = Grit::Repo.new(path)
+      diff_path = self.diff_path(from_id)
+      FileUtils.rm_rf(diff_path)
+      repo.git.clone({}, path, diff_path)
+      Dir.chdir(diff_path) do
+        diff_repo = Grit::Repo.new('.')
+        diff_repo.remote_add("diff", self.class.path(from_id))
+        diff_repo.remote_fetch("diff")
+        # TODO parse the results and return them
+        diff_repo.diff("master", "diff/master")
+      end
+    end
+
     private
     
     def pending_merge(from_id)
@@ -414,6 +434,10 @@ module GitDocument
       
       def merge_path(id, from_id)
         "#{root_path}/merges/#{id}/#{from_id}"
+      end
+      
+      def diff_path(id, from_id)
+        "#{root_path}/diffs/#{id}/#{from_id}"
       end
       
       def merges_path(id)

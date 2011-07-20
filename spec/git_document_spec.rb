@@ -482,7 +482,7 @@ describe "GitDocument::Document" do
     document.history[0][:user_id].should == "bar"
   end
 
-  it "should commit with a user_id when resolving conflicts as well", :now => true do
+  it "should commit with a user_id when resolving conflicts as well" do
     document = Document.create :id => 'foo', :user_id => 1, :foo => { :bar => 'foo' }
     forked = document.create_fork 'bar'
     forked.update_attributes :user_id => 2, :foo => { :bar => 'bar' }
@@ -498,10 +498,20 @@ describe "GitDocument::Document" do
     document.history[3][:user_id].should == "1"
   end
   
-  it "should store UTF-8 special characters as well", :new => true do
+  it "should store UTF-8 special characters as well" do
     Document.create :id => 'foo', :foo => 'áéíóúçãõ'
     document = Document.find 'foo'
     document.foo.should === 'áéíóúçãõ'
+  end
+  
+  it "should find diff from a forked document", :now => true do
+    document = Document.create :id => 'foo', :foo => 'bar'
+    forked = document.create_fork 'bar'
+    forked.create_attribute :bar
+    forked.bar = { :foo => { :bar => 'foo' } }
+    forked.save!
+    # TODO parse the results and return them
+    document.diff(forked.id).size.should == 1
   end
 
 end

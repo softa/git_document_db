@@ -225,4 +225,18 @@ describe "Main" do
     JSON.parse(last_response.body).should == {"id" => "foo", "foo" => "áéíóúçãõ"}
   end
   
+  it "should get a document's diff from another forked document", :now => true do
+    
+    post '/documents', {"id" => "foo", "foo" => "bar"}.to_json
+    post '/documents/foo/fork/bar'
+    put '/documents/bar', {:foo => "baz"}.to_json
+    
+    get '/documents/foo/diff/bar'
+    last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    # TODO parse the results and return them
+    JSON.parse(last_response.body).size.should == 1
+    
+  end
+  
 end
