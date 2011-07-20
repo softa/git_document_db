@@ -3,8 +3,10 @@ require 'sinatra'
 require File.join(File.dirname(__FILE__), 'document')
 Document.root_path = File.join(File.dirname(File.expand_path(__FILE__)), 'db', Sinatra::Application.environment.to_s)
 
-use Rack::Auth::Basic, "Restricted Area" do |username, password|
-  [username, password] == YAML::load(File.open 'credentials.yml')
+if File.exists?('credentials.yml') and settings.environment != :test
+  use Rack::Auth::Basic, "Restricted Area" do |username, password|
+    [username, password] == YAML::load(File.open 'credentials.yml')
+  end
 end
 
 def json_attributes
