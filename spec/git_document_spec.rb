@@ -508,13 +508,13 @@ describe "GitDocument::Document" do
     document = Document.create :id => 'foo', :foo => 'bar'
     forked = document.create_fork 'bar'
 
-    document.merge_needed(forked.id).should == false
+    document.merge_needed?(forked.id).should == false
     
     forked.create_attribute :bar
     forked.bar = { :foo => { :bar => 'foo' } }
     forked.save!
 
-    document.merge_needed(forked.id).should == true
+    document.merge_needed?(forked.id).should == true
   end
 
 end

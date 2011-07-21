@@ -322,7 +322,7 @@ module GitDocument
       Grit::Actor.from_string("#{user} <#{user}@gitdocument.rb>")
     end
     
-    def merge_needed(from_id)
+    def merge_needed?(from_id)
       raise GitDocument::Errors::NotFound unless File.directory?(path)
       raise GitDocument::Errors::NotFound unless File.directory?(self.class.path(from_id))
       repo = Grit::Repo.new(path)

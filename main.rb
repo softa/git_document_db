@@ -135,7 +135,7 @@ end
 get '/documents/:id/merge_needed/:from_id' do |id, from_id|
   begin
     document = Document.find id
-    document.merge_needed(from_id).to_json
+    document.merge_needed?(from_id).to_json
   rescue
     not_found
   end
