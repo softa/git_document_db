@@ -504,14 +504,17 @@ describe "GitDocument::Document" do
     document.foo.should === 'áéíóúçãõ'
   end
   
-  it "should find diff from a forked document", :now => true do
+  it "should tell if a merge is needed between two documents" do
     document = Document.create :id => 'foo', :foo => 'bar'
     forked = document.create_fork 'bar'
+
+    document.merge_needed(forked.id).should == false
+    
     forked.create_attribute :bar
     forked.bar = { :foo => { :bar => 'foo' } }
     forked.save!
-    # TODO parse the results and return them
-    document.diff(forked.id).size.should == 1
+
+    document.merge_needed(forked.id).should == true
   end
 
 end

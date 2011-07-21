@@ -322,20 +322,12 @@ module GitDocument
       Grit::Actor.from_string("#{user} <#{user}@gitdocument.rb>")
     end
     
-    def diff(from_id)
+    def merge_needed(from_id)
       raise GitDocument::Errors::NotFound unless File.directory?(path)
       raise GitDocument::Errors::NotFound unless File.directory?(self.class.path(from_id))
       repo = Grit::Repo.new(path)
-      diff_path = self.diff_path(from_id)
-      FileUtils.rm_rf(diff_path)
-      repo.git.clone({}, path, diff_path)
-      Dir.chdir(diff_path) do
-        diff_repo = Grit::Repo.new('.')
-        diff_repo.remote_add("diff", self.class.path(from_id))
-        diff_repo.remote_fetch("diff")
-        # TODO parse the results and return them
-        diff_repo.diff("master", "diff/master")
-      end
+      from_repo = Grit::Repo.new(self.class.path(from_id))
+      repo.commit_deltas_from(from_repo).size > 0
     end
 
     private
