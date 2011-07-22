@@ -266,4 +266,44 @@ describe "Main" do
     
   end
   
+  it "should merge OK and not have this JSON bug we don't know yet what causes", :now => true do
+  
+    post '/documents', {"id" => "foo", "foo" => ""}.to_json
+
+    put '/documents/foo', {"foo" => "Parágrafo 1\nFoi?\n\nParágrafo 2\nE agora?\n\nParágrafo 3\nFoi mesmo?"}.to_json
+
+    post '/documents/foo/fork/bar'
+    
+    put '/documents/bar', {"foo" => "Parágrafo 1\nFoi?\n\nParágrafo 2\nE agora?\n\nParágrafo 3\nFoi mesmo? Será?"}.to_json
+    
+    put '/documents/foo', {"foo" => "Parágrafo 1\nFoi? Veremos!\n\nParágrafo 2\nE agora?\n\nParágrafo 3\nFoi mesmo?"}.to_json
+
+    get '/documents/foo'
+    last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    JSON.parse(last_response.body).should == {"id" => "foo", "foo" => "Parágrafo 1\nFoi? Veremos!\n\nParágrafo 2\nE agora?\n\nParágrafo 3\nFoi mesmo?"}
+    
+    get '/documents/bar'
+    last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    JSON.parse(last_response.body).should == {"id" => "bar", "foo" => "Parágrafo 1\nFoi?\n\nParágrafo 2\nE agora?\n\nParágrafo 3\nFoi mesmo? Será?"}
+    
+    put '/documents/foo/merge/bar'
+
+    last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    JSON.parse(last_response.body).should == {"id" => "foo", "foo" => "Parágrafo 1\nFoi? Veremos!\n\nParágrafo 2\nE agora?\n\nParágrafo 3\nFoi mesmo? Será?"}
+    
+    get '/documents/foo'
+    last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    JSON.parse(last_response.body).should == {"id" => "foo", "foo" => "Parágrafo 1\nFoi? Veremos!\n\nParágrafo 2\nE agora?\n\nParágrafo 3\nFoi mesmo? Será?"}
+    
+    get '/documents/bar'
+    last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    JSON.parse(last_response.body).should == {"id" => "bar", "foo" => "Parágrafo 1\nFoi?\n\nParágrafo 2\nE agora?\n\nParágrafo 3\nFoi mesmo? Será?"}
+    
+  end
+  
 end
