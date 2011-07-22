@@ -266,7 +266,7 @@ describe "Main" do
     
   end
   
-  it "should merge OK and not have this JSON bug we don't know yet what causes", :now => true do
+  it "should merge OK and not have this JSON, may not work if not using git 1.7.0.4", :now => true do
   
     post '/documents', {"id" => "foo", "foo" => ""}.to_json
 
