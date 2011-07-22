@@ -473,11 +473,7 @@ module GitDocument
       # Workaround to fix JSON.parse incapacity of parsing root objects that are not Array or Hashes
       def jparse(str)
         return JSON.parse(str) if str =~ /\A\s*[{\[]/
-        begin
-          JSON.parse("[#{str}]")[0]
-        rescue
-          puts "AKIIII: [#{str}]"
-        end
+        JSON.parse("[#{str}]")[0]
       end
       
       def no_conflicts?(repo)
