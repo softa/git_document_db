@@ -146,12 +146,34 @@ describe "Main" do
     
     post '/documents', {"id" => "foo", "foo" => "bar"}.to_json
     post '/documents/foo/fork/bar'
+    
     put '/documents/bar', {:foo => "baz"}.to_json
     
+    get '/documents/foo'
+    last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    JSON.parse(last_response.body).should == {"id" => "foo", "foo" => "bar"}
+    
+    get '/documents/bar'
+    last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    JSON.parse(last_response.body).should == {"id" => "bar", "foo" => "baz"}
+    
     put '/documents/foo/merge/bar'
+
     last_response.status.should == 200
     last_response.headers["Content-Type"].should == "application/json"
     JSON.parse(last_response.body).should == {"id" => "foo", "foo" => "baz"}
+    
+    get '/documents/foo'
+    last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    JSON.parse(last_response.body).should == {"id" => "foo", "foo" => "baz"}
+    
+    get '/documents/bar'
+    last_response.status.should == 200
+    last_response.headers["Content-Type"].should == "application/json"
+    JSON.parse(last_response.body).should == {"id" => "bar", "foo" => "baz"}
     
   end
   
@@ -225,7 +247,7 @@ describe "Main" do
     JSON.parse(last_response.body).should == {"id" => "foo", "foo" => "áéíóúçãõ"}
   end
   
-  it "should tell if a merge is needed between two documents", :now => true do
+  it "should tell if a merge is needed between two documents" do
     
     post '/documents', {"id" => "foo", "foo" => "bar"}.to_json
     post '/documents/foo/fork/bar'

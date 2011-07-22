@@ -158,7 +158,7 @@ module GitDocument
             return false
           end
           FileUtils.mkdir_p path
-          repo = Grit::Repo.init(path)
+          repo = Grit::Repo.init_bare(path)
           commit_message = "Creating document ##{self.id}"
         elsif self.changed?
           raise GitDocument::Errors::NotFound unless File.directory?(path)
