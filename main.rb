@@ -95,8 +95,13 @@ post '/documents/:id/fork/:new_id' do |id, new_id|
 end
 
 put '/documents/:id/merge/:from_id' do |id, from_id|
+  attributes = json_attributes || {}
   begin
     document = Document.find id
+    if attributes["user_id"]
+      document.create_attribute :user_id
+      document.user_id = attributes["user_id"]
+    end
     if document.merge!(from_id)
       document.reload
       document.to_json

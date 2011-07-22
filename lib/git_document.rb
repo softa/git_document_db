@@ -270,13 +270,15 @@ module GitDocument
       repo.git.clone({}, path, merge_path)
       Dir.chdir(merge_path) do
         merge_repo = Grit::Repo.new('.')
+        merge_repo.config["user.name"] = self.actor.name
+        merge_repo.config["user.email"] = self.actor.email
         merge_repo.git.remote({}, "add", "merge", self.class.path(from_id))
         merge_repo.git.pull({}, "merge", "master")
         no_conflicts = self.class.no_conflicts?(merge_repo)
         if no_conflicts
           FileUtils.rm_rf(path)
           repo.git.clone({ :bare => true }, "#{merge_path}/.git", path)
-          #FileUtils.rm_rf(merge_path)
+          FileUtils.rm_rf(merge_path)
         end
         no_conflicts
       end
