@@ -108,7 +108,8 @@ put '/documents/:id/merge/:from_id' do |id, from_id|
     else
       409
     end
-  rescue
+  rescue Exception => e
+    puts e.message
     not_found
   end
 end
