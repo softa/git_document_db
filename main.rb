@@ -108,8 +108,8 @@ put '/documents/:id/merge/:from_id' do |id, from_id|
     else
       409
     end
-  #rescue
-  #  not_found
+  rescue
+    not_found
   end
 end
 
