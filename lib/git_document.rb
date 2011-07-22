@@ -276,7 +276,7 @@ module GitDocument
         if no_conflicts
           FileUtils.rm_rf(path)
           repo.git.clone({ :bare => true }, "#{merge_path}/.git", path)
-          FileUtils.rm_rf(merge_path)
+          #FileUtils.rm_rf(merge_path)
         end
         no_conflicts
       end
