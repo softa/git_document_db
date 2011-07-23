@@ -397,16 +397,16 @@ describe "GitDocument::Document" do
     document.bar.should == { :foo => { :bar => 'foo' } }
   end
   
-  it "should merge another document and parse conflicts, even with nested objects", :now => true do
+  it "should merge another document and parse conflicts, even with nested objects and special UTF-8 characters", :now => true do
     document = Document.create :id => 'foo', :foo => 'bar', :text => "Line1\nLine2\nLine2\nLine2\nLine2\nLine2\nLine3\nLine4"
     forked = document.create_fork 'bar'
     forked.create_attribute :bar
     forked.bar = { :foo => { :bar => 'foo' } }
-    forked.text = "Line1_forked\nLine2\nLine2\nLine2\nLine2\nLine2\nLine3_forked\nLine4"
+    forked.text = "Line1_já_forked\nLine2\nLine2\nLine2\nLine2\nLine2\nLine3_forked\nLine4"
     forked.save
     document.create_attribute :bar
     document.bar = { :foo => { :bar => 'bar' } }
-    document.text = "Line1_document\nLine2\nLine2\nLine2\nLine2\nLine2\nLine3_document\nLine4"
+    document.text = "Line1_já_document\nLine2\nLine2\nLine2\nLine2\nLine2\nLine3_document\nLine4"
     document.save
     document.merge!(forked.id).should == false
     document.pending_merges.size.should == 1
@@ -424,7 +424,7 @@ describe "GitDocument::Document" do
     text['conflicts'].should == 2
     text['sections'].should == 4
     text['text'].size.should == 4
-    text['text'][0].should == {"ours"=>["Line1_document"], "theirs"=>["Line1_forked"]}
+    text['text'][0].should == {"ours"=>["Line1_já_document"], "theirs"=>["Line1_já_forked"]}
     text['text'][1].should == {"both"=>["Line2", "Line2", "Line2", "Line2", "Line2"]}
     text['text'][2].should == {"ours"=>["Line3_document"], "theirs"=>["Line3_forked"]}
     text['text'][3].should == {"both"=>["Line4"]}

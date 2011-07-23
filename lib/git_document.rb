@@ -346,6 +346,7 @@ module GitDocument
       attributes = {}
       files.each do |file|
         content = File.open("#{self.merge_path(from_id)}/#{file}", 'rb') { |f| f.read }
+        content.force_encoding('UTF-8') if content.respond_to?(:force_encoding)
         file_merge = Grit::Merge.new(content)
         text = file_merge.text
         if text[0].has_key? "both"
