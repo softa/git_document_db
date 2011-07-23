@@ -347,10 +347,26 @@ module GitDocument
       files.each do |file|
         content = File.open("#{self.merge_path(from_id)}/#{file}", 'rb') { |f| f.read }
         file_merge = Grit::Merge.new(content)
+        text = file_merge.text
+        if text[0].has_key? "both"
+          text[0]["both"][0].gsub! /^\"/, ""
+        else
+          text[0]["ours"][0].gsub! /^\"/, ""
+          text[0]["theirs"][0].gsub! /^\"/, ""
+        end
+        if text[text.size-1].has_key? "both"
+          position = text[text.size-1]["both"].size - 1
+          text[text.size-1]["both"][position].gsub! /\"$/, ""
+        else
+          position = text[text.size-1]["ours"].size - 1
+          text[text.size-1]["ours"][position].gsub! /\"$/, ""
+          position = text[text.size-1]["theirs"].size - 1
+          text[text.size-1]["theirs"][position].gsub! /\"$/, ""
+        end
         attribute = {
           'conflicts' => file_merge.conflicts,
           'sections' => file_merge.sections,
-          'text' => file_merge.text
+          'text' => text
         }
         # Weird code to convert a path like to foo/bar/foo to
         # A Hash tree like { :foo => { :bar => { :foo => attribute } } }
