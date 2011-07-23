@@ -126,6 +126,10 @@ put '/documents/:id/resolve_conflicts/:from_id' do |id, from_id|
   return 400 unless attributes = json_attributes
   begin
     document = Document.find id
+    if attributes["user_id"]
+      document.create_attribute :user_id
+      document.user_id = attributes["user_id"]
+    end
     if document.resolve_conflicts!(from_id, attributes)
       document.reload
       document.to_json
