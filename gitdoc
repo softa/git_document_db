@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'daemons'
+require 'fileutils'
+
+pwd = Dir.pwd
+FileUtils.mkdir_p("/tmp/gitdoc")
+Daemons.run_proc('main.rb', {:dir_mode => :normal, :dir => "/tmp/gitdoc"}) do
+  Dir.chdir(pwd)
+  exec "bundle exec unicorn -p 4567 &> /tmp/gitdoc/log"
+end
