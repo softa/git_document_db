@@ -30,11 +30,13 @@ class App < Sinatra::Application
     begin
       document = $cache.get("document_#{id}")
     rescue Memcached::NotFound
-      document = Document.find id
-      $cache.set "document_#{id}", document.to_json
-      document.to_json
-    rescue
-      not_found
+      begin
+        document = Document.find id
+        $cache.set "document_#{id}", document.to_json
+        document.to_json
+      rescue GitDocument::Errors::NotFound
+        not_found
+      end
     end
   end
 
