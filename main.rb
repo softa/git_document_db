@@ -1,4 +1,6 @@
 require 'sinatra'
+require 'memcached'
+$cache = Memcached.new("localhost:11211")
 
 require File.join(File.dirname(__FILE__), 'document')
 Document.root_path = File.join(File.dirname(File.expand_path(__FILE__)), 'db', Sinatra::Application.environment.to_s)
@@ -26,7 +28,10 @@ class App < Sinatra::Application
 
   get '/documents/:id' do |id|
     begin
+      document = $cache.get("document_#{id}")
+    rescue Memcached::NotFound
       document = Document.find id
+      $cache.set "document_#{id}", document.to_json
       document.to_json
     rescue
       not_found
@@ -38,6 +43,7 @@ class App < Sinatra::Application
     if attributes["id"]
       begin
         document = Document.create! attributes
+        $cache.set "document_#{id}", document.to_json
         document.to_json
       rescue
         409
@@ -52,6 +58,7 @@ class App < Sinatra::Application
     begin
       document = Document.find id
       document.update_attributes(attributes)
+      $cache.set "document_#{id}", document.to_json
       document.to_json
     rescue
       not_found
@@ -62,6 +69,7 @@ class App < Sinatra::Application
     begin
       document = Document.find id
       document.destroy
+      $cache.delete("document_#{id}")
       document.to_json
     rescue
       not_found
